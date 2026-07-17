@@ -5,7 +5,7 @@
 > 📘 **状態:** Sprint 0完了　🚧 **段階:** MVP実装準備　🎯 **対象:** MVP　📄 **ライセンス:** 未決定
 
 > [!IMPORTANT]
-> 現在のリポジトリは **MVP実装中 (Sprint 2進行中)** です。Sprint 0でmonorepo基盤・ゴールデンfixture・CIが、Sprint 1でMapLibre地図表示とPlaywright E2Eが完了し、Sprint 2で単点標高API `GET /elevation` を実装しています。`pnpm install && pnpm test` (196件) と `pnpm test:e2e` (CI) がグリーンです。地形分析・断面分析・確認支援・レポート出力はこれから実装します。
+> 現在のリポジトリは **MVP実装中 (Sprint 2進行中)** です。Sprint 0でmonorepo基盤・ゴールデンfixture・CIが、Sprint 1でMapLibre地図表示とPlaywright E2Eが完了し、Sprint 2で単点標高API `GET /elevation` を実装しています。`pnpm install && pnpm test` (200件) と `pnpm test:e2e` (CI) がグリーンです。地形分析・断面分析・確認支援・レポート出力はこれから実装します。
 
 ## 🌟 目指すもの
 
@@ -116,7 +116,7 @@ Sprint 0でmonorepo基盤・スケルトン実装・ゴールデンfixture・CI�
 pnpm install --frozen-lockfile   # 依存関係を導入
 pnpm lint                        # 静的検査
 pnpm typecheck                   # TypeScript strict検査 (tests/fixtures含む)
-pnpm test                        # 単体テスト (121件)
+pnpm test                        # 単体テスト (200件)
 pnpm build                       # 全ワークスペースをビルド
 pnpm format                      # コードスタイル検査
 ```
@@ -155,7 +155,7 @@ flowchart LR
 - ✅ 要件定義書 v1.0.0
 - ✅ 詳細設計仕様書 v1.0.0
 - ✅ README・docs初版
-- ✅ Sprint 0: monorepoスケルトン実装 (`apps/*`, `packages/*`) + ゴールデンfixture (121テスト全パス)
+- ✅ Sprint 0: monorepoスケルトン実装 (`apps/*`, `packages/*`) + ゴールデンfixture (当時121テスト、現在200テスト全パス)
 - ✅ OpenAPI 3.1初版 (`openapi/openapi.yaml`)
 - ✅ CI (`.github/workflows/ci.yml`、GitHub Actions実環境でPR #1にて成功確認済み。secret scan/SASTはSprint 1以降)
 - 🚧 MVP機能実装 — Sprint 1で実装済み: MapLibre地図表示 (GSI標準/淡色/写真 + 傾斜量・陰影起伏の切替、帰属常設、表示状態の共有URLハッシュ)。Sprint 2で実装済み: 単点標高API `GET /elevation` (GSI DEMタイル取得→PNG復号→出典・品質付き応答、Web標準stream採用でWorkers/Node両対応)。未着手: 地図UIからの地点指定連携・地形分析・断面分析・確認支援・レポート出力 (Markdown/CSV/JSON)

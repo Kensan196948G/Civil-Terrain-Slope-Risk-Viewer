@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "description": "公開地形データから工事候補地の標高・傾斜・地形分類を可視化するWebシステム",
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.6.0"
   },
   "packageManager": "pnpm@10.26.2",
   "scripts": {
@@ -20,7 +20,7 @@
     "build": "pnpm -r run build",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
-    "fixtures:generate": "node tests/fixtures/generate/generate.ts",
+    "fixtures:generate": "node --experimental-strip-types tests/fixtures/generate/generate.ts",
     "fixtures:test": "vitest run --config tests/fixtures/vitest.config.ts",
     "fixtures:typecheck": "tsc --noEmit -p tests/fixtures/tsconfig.json"
   },

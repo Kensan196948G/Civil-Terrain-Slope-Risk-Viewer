@@ -2,9 +2,8 @@ name = "civil-terrain-api"
 main = "src/index.ts"
 compatibility_date = "2025-11-01"
 
-# Local dev (`wrangler dev`) and deploy require the wrangler CLI. It is added as
-# a devDependency once the deploy pipeline is wired; Sprint 0 only verifies
-# typecheck / test / lint, so wrangler is intentionally not installed yet.
+# Local dev: `pnpm --filter @civil-terrain/api dev` (wrangler dev, port 8787).
+# Deploys stay manual and human-approved; no deploy script is wired on purpose.
 
 [observability]
 enabled = true

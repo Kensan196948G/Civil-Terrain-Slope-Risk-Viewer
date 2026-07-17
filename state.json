@@ -76,6 +76,11 @@
       "detail": "合成DEM PNGタイル7枚(山地/平地/低地/負標高/海岸/DEM境界/データ範囲外)、地形分類10正規化区分+境界サンプル、傾斜・タイル座標の解析的ゴールデン値をgenerate/spec.ts一次情報から生成(node tests/fixtures/generate/generate.tsで再実行可能、pngjs等の外部PNGライブラリ不使用、標準zlib+自前CRC32のみでchunk構築)。golden.test.ts(50件)はDEM round-trip・encodeElevation/decodeElevation恒等性・Horn法傾斜・XYZタイル座標(高緯度クランプ発動含む)を検証。期待値は実装出力のスナップショットではなく数式から独立導出し、Python PILでも標高復元をクロス検証済み(循環検証を回避)。lonLatToTileXY(0,89,z)が緯度クランプ後にy=-1(範囲外)を返す挙動をゴールデンテストで固定化したが、下流での安全なハンドリング(範囲外座標チェック等)はSprint 1のタイル生成実装時に再検討すること。"
     },
     {
+      "id": "SPRINT2-ELEVATION",
+      "title": "Sprint 2中核: 単点標高API GET /elevation 完了 (PR #13 merged, Issue #12/#3)",
+      "detail": "geoへWeb標準De/CompressionStreamベースの移植可能PNGコーデック(全5フィルタ/複数IDAT/RGB+RGBA、テストは独立実装の順方向フィルタで検証)とlonLatToTilePixelを追加。Issue #3解消(zoom検証+x/yクランプ、fixture date-line-east-z1をx=n→n-1へ再生成)。adaptersへGSI DEMアダプター(優先順位5A→5B→5C→10Bフォールスルー、失敗混在時はUpstreamTileErrorで欠損断定回避、Provenance/pointQualityFor付与)。apiへDI可能な/elevationルート(INVALID_INPUT/NO_COVERAGE/UPSTREAM_UNAVAILABLE、checkUrlSafety allowlist防御)。レビューMedium3件を同PR修正: M1=IHDR寸法上限2048+inflateストリーム中断(bomb対策、防御は資源消費の前と最中に置く)、M2=openapi 503追加、M3=request.signal伝播+abort短絡。L1はIssue #14(DNS rebinding)、L2/L3はIssue #8へ。テスト200/200。人間承認でsquash merge(dfc245b)。"
+    },
+    {
       "id": "SPRINT1-E2E",
       "title": "Playwright E2E基盤 + 地図レイヤーsmoke完了 (PR #11 merged, Issue #10)",
       "detail": "tests/e2eにPlaywright基盤 (webServer=vite dev固定ポート、CI時retry1+github/html reporter、SwiftShader WebGL) とsmoke 3本 (初期表示+帰属常設+コンソールエラー0 / レイヤー切替→ハッシュ / 共有URL復元) を実装。GSIタイルはpage.routeでfixture合成PNGへ差し替えネットワーク非依存。CIにplaywright install --with-deps chromium + test:e2e + 失敗時report artifactを追加し、実環境で2連続success (MapLibre実ブラウザ描画とPR#9 H1修正の実証)。レビュー指摘M1 (html reporter/trace/screenshot欠如でartifactが空になる) とL3 (permissions: contents: read) を同PR修正。型分離をtypes:[]で明文化 (learning TYPES-AUTO-INCLUDE-ISOLATION)。ローカルClaude Code環境はheadless Chrome起動不能 (SIGTRAP) のためE2EはCIランナーが一次実行環境。人間承認でsquash merge (f1618a4)。"
@@ -104,6 +109,11 @@
   "blocked_issues": [],
   "learning": {
     "failure_patterns": [
+      {
+        "id": "CLAUDE-CODE-ENV-NATIVE-RUNTIME-LIMIT",
+        "title": "Claude Code実行環境ではheadless Chromeとworkerdがプロセス起動できない",
+        "detail": "本マシンのClaude Code実行環境では、headless Chrome(SIGTRAP即死)とwrangler devのworkerd(Fatal process out of memory: SegmentedTable::InitializeTable、V8メモリケージ初期化失敗)が起動できない。dangerouslyDisableSandboxでも同結果のため、ツールsandboxではなく環境レベルの制約。対応パターン: (1)実起動が必要な検証(E2E、Workers dev)はGitHub ActionsのCIランナーを一次実行環境にする、(2)起動なしで検証できる代替を常設ゲート化する(wrangler deploy --dry-runはworkerd不要でバンドル検証可能。25KiBバンドル成功でWorkers互換を実証済み)、(3)実ブラウザ/実Workerの手元確認は人間へ60秒手順として依頼する。curlやvite devサーバー等の通常プロセスは問題なく動く。"
+      },
       {
         "id": "GH-PR-EDIT-PROJECTS-CLASSIC",
         "title": "gh pr edit がProjects classic廃止のGraphQLエラーで失敗する",
