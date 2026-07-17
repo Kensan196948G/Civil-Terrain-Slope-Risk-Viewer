@@ -9,6 +9,10 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege: CI only reads the repository contents.
+permissions:
+  contents: read
+
 jobs:
   ci:
     name: Lint / Typecheck / Test / Build
@@ -45,6 +49,21 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: E2E smoke (Playwright)
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Dependency audit (high severity and above)
         run: pnpm audit --audit-level=high

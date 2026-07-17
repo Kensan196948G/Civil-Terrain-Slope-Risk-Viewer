@@ -76,6 +76,11 @@
       "detail": "合成DEM PNGタイル7枚(山地/平地/低地/負標高/海岸/DEM境界/データ範囲外)、地形分類10正規化区分+境界サンプル、傾斜・タイル座標の解析的ゴールデン値をgenerate/spec.ts一次情報から生成(node tests/fixtures/generate/generate.tsで再実行可能、pngjs等の外部PNGライブラリ不使用、標準zlib+自前CRC32のみでchunk構築)。golden.test.ts(50件)はDEM round-trip・encodeElevation/decodeElevation恒等性・Horn法傾斜・XYZタイル座標(高緯度クランプ発動含む)を検証。期待値は実装出力のスナップショットではなく数式から独立導出し、Python PILでも標高復元をクロス検証済み(循環検証を回避)。lonLatToTileXY(0,89,z)が緯度クランプ後にy=-1(範囲外)を返す挙動をゴールデンテストで固定化したが、下流での安全なハンドリング(範囲外座標チェック等)はSprint 1のタイル生成実装時に再検討すること。"
     },
     {
+      "id": "SPRINT1-MAPLIBRE",
+      "title": "Sprint 1: MapLibre地図表示・GSIレイヤー切替・帰属常設・共有URL完了 (PR #9 merged)",
+      "detail": "Issue #6完了。apps/webへmaplibre-gl 5.24導入。layers.ts(GSI標準/淡色/写真+傾斜量/陰影起伏、全レイヤー帰属必須、buildMapStyle/applyLayerSelectionは純粋関数)、map-state.ts(共有URLハッシュ #view=z/lat/lon&base=id&ov=ids、壊れた値はフォールバック)、MapView.tsx(init 1回・visibility切替・AttributionControl常設・moveend通知)、LayerSwitcher.tsx(非色依存radio/checkbox)。CodeRabbit CLIレビューでH1(styleロード前setLayoutProperty throw)検出→isStyleLoaded+once(load)遅延で修正、L1(空セグメント0化け)/L2(パン毎再適用)/L3(role=region)/L4(README)も修正。モックを実挙動(ロード前throw)に忠実化し旧実装では落ちる回帰テストを追加。人間承認でsquash merge(f25a3ed)。テスト159/159。教訓: no-opモックはバグを隠す。モックは守りたい不変条件(呼んではいけないタイミングでthrow)を再現させること。"
+    },
+    {
       "id": "SPRINT0-REVIEW",
       "title": "Sprint 0 CodeRabbitレビュー完了 + High/Medium修正 + PR #1 Ready化",
       "detail": "CodeRabbit CLI v0.6.5 + 手動精読によるレビュー結果: Critical=0 High=1 Medium=5 Low=18。同PR内で修正: [H1] card-ruleのNaN/±InfinityがREFERENCEへ丸められる問題をNumber.isFiniteガードでUNKNOWN化(Unknown is not Safe、回帰テスト3件追加)、[M1] openapiエラー応答をapplication/problem+jsonへ統一しrequestIdをrequired化(http.tsでも静的強制)、[M2] ErrorCodeへUNAUTHENTICATED(401)/FORBIDDEN(403)追加とopenapi enum同期、[M3] .gitignoreを.env/.env.*+!.env.exampleへ是正。M4はIssue #7、M5はIssue #3拡張、Low18件はIssue #8へ棚卸し(CR#20はIssue #2補足)。修正後テスト124/124、CI 4連続success(run 29545965895/29546098734/29546633668/29546946665)でSTABLE基準(通常N=3)超過。PR #1をReady for review化しCodeRabbit GitHub Appレビューを起動。merge判断は人間待ち。"
@@ -115,6 +120,11 @@
         "id": "ROUTE-ERROR-CODE-ISOLATION",
         "title": "HTTPルーティングエラーにドメイン固有のエラーコードを転用しない",
         "detail": "apps/apiのrouter.tsで、未定義パス/不一致メソッドの応答コードとしてNO_COVERAGE(404)を流用せずINVALID_INPUT(400)を採用。理由: NO_COVERAGEは「対象地域の地形データが提供範囲外」という業務的に重要な意味をpackages/domainのErrorCode taxonomy内で専有しており、これをルーティング起因の404(URLタイポ等)にも使うと、admin/source-healthのような監視ダッシュボードで実データ欠損と実装ミスの集計が混ざってしまう。ドメインエラーコードは業務的意味の一意性を優先し、ルーティングエラーには意味的に最も近い汎用コードを充てる、という原則をSprint 0で確立。405(メソッド不一致)も表現するコードがないため同じく400に集約。将来ROUTE_NOT_FOUND等の専用コードが必要になった場合はErrorCode enumへの追加を検討すること。"
+      },
+      {
+        "id": "TYPES-AUTO-INCLUDE-ISOLATION",
+        "title": "tsconfig.base.jsonにtypes:[]を明示し、@typesの自動includeをopt-in制にする",
+        "detail": "TypeScriptはtsconfigにtypesキーが無いとnode_modules/@types/*を全プログラムへ自動includeするため、root devDependenciesに@types/nodeを置いた瞬間、Cloudflare Workersパッケージでもprocess等のNodeグローバルが型を通ってしまう(TSCONFIG-LIB-OVERRIDE方針の崩壊)。対策としてtsconfig.base.jsonへ\"types\": []を明示し自動includeを全プログラムで停止、Nodeで実行するテストハーネス(tests/e2e)のみローカルtsconfigで\"types\": [\"node\"]をopt-in。なおtests/fixturesがnode:zlib等を解決できていたのは、vitest.config.tsがvite/vitestの型を経由して.pnpm内の@types/nodeのd.tsを連鎖importし、その中のdeclare module宣言がambientに効くという偶発的経路であり、types:[]設定後も維持される(typesは自動includeのみ制御し、明示的な型の連鎖importには影響しない)。PR #10で確立。"
       },
       {
         "id": "VITEST-WORKSPACE-INDEPENDENT-FROM-PNPM-WORKSPACE",
