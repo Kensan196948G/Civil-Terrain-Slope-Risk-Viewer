@@ -6,7 +6,7 @@
     "phase_mode": "development"
   },
   "goal": "Sprint 0基盤構築 (monorepo/CI/fixture/台帳) を完了し、Release Ready または Production Ready へ向けた自律開発を継続する",
-  "phase": "Verify",
+  "phase": "Build",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,

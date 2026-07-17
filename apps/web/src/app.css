@@ -1,0 +1,82 @@
+/* SCR-01 minimal layout. Visual design system lands in a later sprint. */
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app-header {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #ccc;
+}
+
+.app-header h1 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.app-header p {
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0;
+}
+
+.app-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-sidebar {
+  width: 14rem;
+  padding: 0.75rem;
+  overflow-y: auto;
+  border-right: 1px solid #ccc;
+}
+
+.layer-switcher fieldset {
+  border: 1px solid #ccc;
+  margin-bottom: 0.75rem;
+}
+
+.layer-switcher label {
+  display: block;
+  padding: 0.15rem 0;
+}
+
+.app-map {
+  flex: 1;
+  min-width: 0;
+}
+
+.map-view {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 40rem) {
+  .app-main {
+    flex-direction: column;
+  }
+
+  .app-sidebar {
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .app-map {
+    min-height: 20rem;
+  }
+}

@@ -1,0 +1,97 @@
+import { useEffect, useRef } from "react";
+import type { ReactElement } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { applyLayerSelection, buildMapStyle } from "./layers";
+import type { MapViewState } from "./map-state";
+
+export interface MapViewProps {
+  readonly view: MapViewState;
+  /** 利用者の地図操作 (パン・ズーム) 後に呼ばれる。視点の真実は地図側にある。 */
+  readonly onViewChange: (view: MapViewState) => void;
+}
+
+/**
+ * MapLibre GL JS の薄いラッパー。ロジックは layers.ts / map-state.ts の純粋関数に
+ * 寄せ、このコンポーネントはライフサイクル接続のみを担う:
+ * - 初期化は1回だけ (再レンダリングで地図を作り直さない)
+ * - レイヤー切替は visibility 切替 (タイルキャッシュを保つ)
+ * - 視点 (center/zoom) は地図が真実であり、React 側から書き戻さない
+ * - 帰属表示は AttributionControl で常設 (要件: 出典表示率 100%)
+ */
+export function MapView({ view, onViewChange }: MapViewProps): ReactElement {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const viewRef = useRef(view);
+  const onViewChangeRef = useRef(onViewChange);
+
+  viewRef.current = view;
+  onViewChangeRef.current = onViewChange;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container === null) {
+      return;
+    }
+
+    const initial = viewRef.current;
+    const map = new maplibregl.Map({
+      container,
+      style: buildMapStyle(initial),
+      center: [initial.lon, initial.lat],
+      zoom: initial.zoom,
+      // Default control is replaced below so the attribution is always expanded.
+      attributionControl: false,
+    });
+    map.addControl(new maplibregl.AttributionControl({ compact: false }));
+    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-right");
+    map.on("moveend", () => {
+      const center = map.getCenter();
+      onViewChangeRef.current({
+        ...viewRef.current,
+        lat: center.lat,
+        lon: center.lng,
+        zoom: map.getZoom(),
+      });
+    });
+
+    mapRef.current = map;
+    return () => {
+      mapRef.current = null;
+      map.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map === null) {
+      return;
+    }
+    const apply = (): void => {
+      applyLayerSelection(map, viewRef.current);
+    };
+    // maplibre's Style.setLayoutProperty throws ("Style is not done loading.")
+    // until the style finishes its async load, which is still pending when this
+    // effect first runs after the init effect. Defer to the load event then.
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once("load", apply);
+    return () => {
+      map.off("load", apply);
+    };
+    // Depend on the selection only: moveend replaces the whole view object, and
+    // reapplying visibility for every pan/zoom would be wasted work.
+  }, [view.base, view.overlays]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="map-view"
+      data-testid="map-view"
+      role="region"
+      aria-label="地図"
+    />
+  );
+}
