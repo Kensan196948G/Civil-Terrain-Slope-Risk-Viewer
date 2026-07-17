@@ -1,5 +1,6 @@
 import type { Env, ExecutionContext } from "./env.js";
 import { problemResponse } from "./http.js";
+import { handleElevation } from "./routes/elevation.js";
 import { handleHealthLive, handleHealthReady } from "./routes/health.js";
 
 /** Base path for all v1 endpoints (matches the openapi `servers` url). */
@@ -23,12 +24,13 @@ interface Route {
 }
 
 /**
- * Route table. Paths are relative to API_BASE_PATH. Sprint 0 ships the health
- * endpoints only; further endpoints are added by appending rows here.
+ * Route table. Paths are relative to API_BASE_PATH; further endpoints are
+ * added by appending rows here.
  */
 const ROUTES: readonly Route[] = [
   { method: "GET", path: "/health/live", handler: handleHealthLive },
   { method: "GET", path: "/health/ready", handler: handleHealthReady },
+  { method: "GET", path: "/elevation", handler: handleElevation },
 ];
 
 /**

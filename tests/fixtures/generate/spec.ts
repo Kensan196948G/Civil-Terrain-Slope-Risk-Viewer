@@ -411,11 +411,11 @@ export const TILE_CASES: readonly TileCase[] = [
   },
   {
     id: "date-line-east-z1",
-    description: "日付変更線 lon=180 z1 → x=n=2 (右端の境界値)。",
+    description: "日付変更線 lon=180 z1 → 右端タイル x=n-1=1 へクランプ (issue #3)。",
     lon: 180,
     lat: 0,
     zoom: 1,
-    expected: { x: 2, y: 1 },
+    expected: { x: 1, y: 1 },
   },
   {
     id: "high-latitude-z3",

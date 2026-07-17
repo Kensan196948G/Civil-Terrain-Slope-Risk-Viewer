@@ -145,6 +145,8 @@ paths:
           $ref: "#/components/responses/NoCoverage"
         "429":
           $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/UpstreamUnavailable"
 
   /analyses/point:
     post:
@@ -558,6 +560,11 @@ components:
           $ref: "#/components/schemas/DemSource"
         quality:
           $ref: "#/components/schemas/QualitySummary"
+        provenance:
+          type: array
+          description: Evidence First — 採用した標高値の出典・取得日時・加工注記。
+          items:
+            $ref: "#/components/schemas/Provenance"
 
     ElevationSummary:
       type: object

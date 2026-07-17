@@ -76,6 +76,11 @@
       "detail": "合成DEM PNGタイル7枚(山地/平地/低地/負標高/海岸/DEM境界/データ範囲外)、地形分類10正規化区分+境界サンプル、傾斜・タイル座標の解析的ゴールデン値をgenerate/spec.ts一次情報から生成(node tests/fixtures/generate/generate.tsで再実行可能、pngjs等の外部PNGライブラリ不使用、標準zlib+自前CRC32のみでchunk構築)。golden.test.ts(50件)はDEM round-trip・encodeElevation/decodeElevation恒等性・Horn法傾斜・XYZタイル座標(高緯度クランプ発動含む)を検証。期待値は実装出力のスナップショットではなく数式から独立導出し、Python PILでも標高復元をクロス検証済み(循環検証を回避)。lonLatToTileXY(0,89,z)が緯度クランプ後にy=-1(範囲外)を返す挙動をゴールデンテストで固定化したが、下流での安全なハンドリング(範囲外座標チェック等)はSprint 1のタイル生成実装時に再検討すること。"
     },
     {
+      "id": "SPRINT1-E2E",
+      "title": "Playwright E2E基盤 + 地図レイヤーsmoke完了 (PR #11 merged, Issue #10)",
+      "detail": "tests/e2eにPlaywright基盤 (webServer=vite dev固定ポート、CI時retry1+github/html reporter、SwiftShader WebGL) とsmoke 3本 (初期表示+帰属常設+コンソールエラー0 / レイヤー切替→ハッシュ / 共有URL復元) を実装。GSIタイルはpage.routeでfixture合成PNGへ差し替えネットワーク非依存。CIにplaywright install --with-deps chromium + test:e2e + 失敗時report artifactを追加し、実環境で2連続success (MapLibre実ブラウザ描画とPR#9 H1修正の実証)。レビュー指摘M1 (html reporter/trace/screenshot欠如でartifactが空になる) とL3 (permissions: contents: read) を同PR修正。型分離をtypes:[]で明文化 (learning TYPES-AUTO-INCLUDE-ISOLATION)。ローカルClaude Code環境はheadless Chrome起動不能 (SIGTRAP) のためE2EはCIランナーが一次実行環境。人間承認でsquash merge (f1618a4)。"
+    },
+    {
       "id": "SPRINT1-MAPLIBRE",
       "title": "Sprint 1: MapLibre地図表示・GSIレイヤー切替・帰属常設・共有URL完了 (PR #9 merged)",
       "detail": "Issue #6完了。apps/webへmaplibre-gl 5.24導入。layers.ts(GSI標準/淡色/写真+傾斜量/陰影起伏、全レイヤー帰属必須、buildMapStyle/applyLayerSelectionは純粋関数)、map-state.ts(共有URLハッシュ #view=z/lat/lon&base=id&ov=ids、壊れた値はフォールバック)、MapView.tsx(init 1回・visibility切替・AttributionControl常設・moveend通知)、LayerSwitcher.tsx(非色依存radio/checkbox)。CodeRabbit CLIレビューでH1(styleロード前setLayoutProperty throw)検出→isStyleLoaded+once(load)遅延で修正、L1(空セグメント0化け)/L2(パン毎再適用)/L3(role=region)/L4(README)も修正。モックを実挙動(ロード前throw)に忠実化し旧実装では落ちる回帰テストを追加。人間承認でsquash merge(f25a3ed)。テスト159/159。教訓: no-opモックはバグを隠す。モックは守りたい不変条件(呼んではいけないタイミングでthrow)を再現させること。"

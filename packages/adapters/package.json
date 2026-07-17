@@ -11,7 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@civil-terrain/domain": "workspace:*"
+    "@civil-terrain/domain": "workspace:*",
+    "@civil-terrain/geo": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

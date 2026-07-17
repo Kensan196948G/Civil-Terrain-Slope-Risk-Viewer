@@ -9,10 +9,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@civil-terrain/adapters": "workspace:*",
     "@civil-terrain/db": "workspace:*",
     "@civil-terrain/domain": "workspace:*"
   },
   "devDependencies": {
+    "@civil-terrain/geo": "workspace:*",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"
   }
