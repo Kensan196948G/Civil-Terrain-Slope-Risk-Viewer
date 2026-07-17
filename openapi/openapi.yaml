@@ -1,0 +1,975 @@
+openapi: 3.1.0
+
+info:
+  title: Civil Terrain & Slope Risk Viewer API
+  version: 0.1.0
+  summary: 地形傾斜リスク可視化システム API (Sprint 0 初版)
+  description: |
+    公開地形データ (国土地理院DEM等) から工事候補地の標高・傾斜・地形分類を可視化し、
+    現地調査への論点整理を支援する API。
+
+    ## 設計原則
+    - **Evidence First**: すべての観測結果に出典・取得日時・加工注記を紐付ける。
+    - **Unknown is not Safe**: データ欠損・取得失敗は `UNKNOWN` として明示し、
+      低リスク (`REFERENCE`) や安全側の数値へ丸めない。
+    - 本APIの出力は初期確認支援であり、確定的な安全性判断ではない。
+
+    詳細は `地形傾斜リスク可視化システム詳細設計仕様書.md` 7章を正本とする。
+  license:
+    name: UNLICENSED
+
+servers:
+  - url: /api/v1
+    description: 現在のオリジンからの相対パス (開発・本番共通)
+
+tags:
+  - name: health
+    description: 稼働・準備状態
+  - name: capabilities
+    description: サーバー機能・データソース情報
+  - name: elevation
+    description: 単点標高
+  - name: analyses
+    description: 地点・断面・範囲分析
+  - name: tiles
+    description: DEM/地形タイルプロキシ
+  - name: admin
+    description: 管理者向けエンドポイント
+
+paths:
+  /health/live:
+    get:
+      operationId: getHealthLive
+      tags: [health]
+      summary: プロセス生存確認
+      description: プロセスが応答可能であることのみを示す。DB等の依存先は確認しない。認証不要。
+      security: []
+      responses:
+        "200":
+          description: プロセスは生存している。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthLiveResponse"
+
+  /health/ready:
+    get:
+      operationId: getHealthReady
+      tags: [health]
+      summary: 準備状態確認
+      description: DB接続・設定読み込み・主要依存先の準備状態を確認する。アクセス制限を設ける場合がある。
+      responses:
+        "200":
+          description: すべての依存先が準備完了している。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthReadyResponse"
+        "503":
+          $ref: "#/components/responses/UpstreamUnavailable"
+
+  /capabilities:
+    get:
+      operationId: getCapabilities
+      tags: [capabilities]
+      summary: サーバー機能情報
+      description: PostGISの利用可否、対応レイヤー、対応出力形式を返す。認証不要。
+      security: []
+      responses:
+        "200":
+          description: 機能情報。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Capabilities"
+
+  /sources:
+    get:
+      operationId: listSources
+      tags: [capabilities]
+      summary: 有効データソース一覧
+      description: 現在有効なDEM・地形分類データソースと、その帰属・利用条件を返す。認証不要。
+      security: []
+      responses:
+        "200":
+          description: データソース一覧。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SourceInfo"
+
+  /elevation:
+    get:
+      operationId: getElevation
+      tags: [elevation]
+      summary: 単点標高取得
+      description: 指定座標の標高を取得する。Rate limit対象。認証不要。
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+        - name: lon
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+      responses:
+        "200":
+          description: 標高値。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ElevationPoint"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NoCoverage"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /analyses/point:
+    post:
+      operationId: createPointAnalysis
+      tags: [analyses]
+      summary: 地点・周辺分析
+      description: |
+        中心座標周辺の標高・傾斜・地形分類・要確認カードを算出する。
+        Rate limit対象。`persist=true` の場合のみ保存され、既定は保存しない。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PointAnalysisRequest"
+            examples:
+              default:
+                value:
+                  center: { lat: 35.681236, lon: 139.767125 }
+                  radiusM: 500
+                  layers: [elevation, slope, landform]
+                  slopeBinsDeg: [0, 5, 15, 30, 45, 90]
+                  persist: false
+      responses:
+        "200":
+          description: 分析結果。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResponseEnvelope"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NoCoverage"
+        "413":
+          $ref: "#/components/responses/AnalysisAreaTooLarge"
+        "422":
+          $ref: "#/components/responses/InsufficientData"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /analyses/profile:
+    post:
+      operationId: createProfileAnalysis
+      tags: [analyses]
+      summary: 断面分析
+      description: |
+        入力LineStringに沿った断面 (標高・傾斜・累積上昇下降) を算出する。
+        既定サンプル上限2,000点。Rate limit対象。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileAnalysisRequest"
+      responses:
+        "200":
+          description: 断面分析結果。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResponseEnvelope"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NoCoverage"
+        "413":
+          $ref: "#/components/responses/AnalysisAreaTooLarge"
+        "422":
+          $ref: "#/components/responses/InsufficientData"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /analyses/area:
+    post:
+      operationId: createAreaAnalysis
+      tags: [analyses]
+      summary: 円/ポリゴン範囲分析
+      description: |
+        円またはポリゴン範囲の分析を行う。Analyst以上のロールが必要。
+        公開APIのポリゴンは最大100頂点、最大4km²。
+      security:
+        - cloudflareAccessJwt: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AreaAnalysisRequest"
+      responses:
+        "200":
+          description: 範囲分析結果。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResponseEnvelope"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NoCoverage"
+        "413":
+          $ref: "#/components/responses/AnalysisAreaTooLarge"
+        "422":
+          $ref: "#/components/responses/InsufficientData"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /analyses/{publicId}:
+    get:
+      operationId: getAnalysis
+      tags: [analyses]
+      summary: 保存済み分析の取得
+      description: 所有者、または共有設定に応じてアクセス可能な保存済み分析を取得する。
+      security:
+        - cloudflareAccessJwt: []
+        - {}
+      parameters:
+        - $ref: "#/components/parameters/PublicId"
+      responses:
+        "200":
+          description: 保存済み分析結果。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResponseEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NoCoverage"
+
+  /analyses/{publicId}/exports:
+    post:
+      operationId: exportAnalysis
+      tags: [analyses]
+      summary: 分析結果のエクスポート
+      description: 保存済み分析からMarkdown/CSV/JSONを生成する。所有者のみ。Rate limit対象。
+      security:
+        - cloudflareAccessJwt: []
+      parameters:
+        - $ref: "#/components/parameters/PublicId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportRequest"
+      responses:
+        "200":
+          description: 生成されたエクスポート成果物。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ExportResult"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NoCoverage"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /tiles/proxy/{source}/{z}/{x}/{y}:
+    get:
+      operationId: getTileProxy
+      tags: [tiles]
+      summary: 許可済みタイル取得・キャッシュ
+      description: |
+        ソース台帳のallowlistに登録済みのDEM/地形タイルのみを取得しキャッシュする。
+        利用者入力からURLを直接組み立てない (SSRF対策)。Rate limit対象。
+      parameters:
+        - name: source
+          in: path
+          required: true
+          description: ソース台帳に登録済みのソースキー。
+          schema:
+            type: string
+            pattern: "^[a-z0-9_]+$"
+        - name: z
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 22
+        - name: x
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+        - name: y
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: タイルバイナリ (PNG等、ソースに依存)。
+          content:
+            image/png:
+              schema:
+                type: string
+                contentEncoding: base64
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NoCoverage"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/UpstreamInvalidResponse"
+        "503":
+          $ref: "#/components/responses/UpstreamUnavailable"
+
+  /admin/source-health:
+    get:
+      operationId: getSourceHealth
+      tags: [admin]
+      summary: データソース健全性
+      description: 各データソースの直近取得成功率・エラー傾向を返す。DataAdmin以上が必要。
+      security:
+        - cloudflareAccessJwt: []
+      responses:
+        "200":
+          description: ソース健全性一覧。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SourceHealth"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+components:
+  parameters:
+    PublicId:
+      name: publicId
+      in: path
+      required: true
+      description: 推測困難なULID (連番は公開しない)。
+      schema:
+        type: string
+        pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+
+  securitySchemes:
+    cloudflareAccessJwt:
+      type: apiKey
+      in: header
+      name: Cf-Access-Jwt-Assertion
+      description: |
+        Cloudflare AccessがWorkerへ転送する検証済みJWT。
+        ロール (Anonymous/Viewer/Analyst/DataAdmin/SystemAdmin) はJWTクレームから
+        内部ユーザーIDへ不可逆・安定マッピングした上でAPI側が強制する。
+
+  schemas:
+    Coordinate:
+      type: object
+      required: [lat, lon]
+      properties:
+        lat:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        lon:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+
+    DemSource:
+      type: string
+      enum: [DEM1A, DEM5A, DEM5B, DEM5C, DEM10B]
+      description: 国土地理院DEM種別。取得優先順位は DEM1A → DEM5A → DEM5B → DEM5C → DEM10B。
+
+    QualityGrade:
+      type: string
+      enum: [A, B, C, D, UNKNOWN]
+
+    Coverage:
+      type: string
+      enum: [FULL, PARTIAL, NONE]
+
+    QualitySummary:
+      type: object
+      required: [grade, missingRatio, sourceMix, coverage, warnings]
+      properties:
+        grade:
+          $ref: "#/components/schemas/QualityGrade"
+        missingRatio:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 欠損セルの割合。
+        sourceMix:
+          type: object
+          description: 採用元DEMソースごとの使用セル数。
+          additionalProperties:
+            type: integer
+            minimum: 0
+        coverage:
+          $ref: "#/components/schemas/Coverage"
+        warnings:
+          type: array
+          items:
+            type: string
+
+    RiskStatus:
+      type: string
+      enum: [REFERENCE, CHECK_REQUIRED, UNKNOWN]
+      description: |
+        REFERENCE: 参考情報 (閾値未達等)。
+        CHECK_REQUIRED: 現地調査・追加確認を推奨。
+        UNKNOWN: 判定不能 (Unknown is not Safe 原則によりREFERENCEへ丸めない)。
+
+    AnalysisStatus:
+      type: string
+      enum:
+        - REQUESTED
+        - VALIDATING
+        - REJECTED
+        - FETCHING
+        - ANALYZING
+        - COMPLETE
+        - PARTIAL
+        - UNKNOWN
+      description: 終端状態は REJECTED / COMPLETE / PARTIAL / UNKNOWN の4種。
+
+    Provenance:
+      type: object
+      required: [sourceId, sourceName, sourceUrl, termsUrl, retrievedAt, processed]
+      properties:
+        sourceId:
+          type: string
+        sourceName:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+        termsUrl:
+          type: string
+          format: uri
+        retrievedAt:
+          type: string
+          format: date-time
+        sourceVersion:
+          type: string
+        resolutionM:
+          type: number
+          exclusiveMinimum: 0
+        processed:
+          type: boolean
+        processingNote:
+          type: string
+
+    CheckCard:
+      type: object
+      required: [code, status, title, observation, recommendedChecks, evidenceIds, algorithmVersion]
+      properties:
+        code:
+          type: string
+          description: ルールID (config_versions.rule_json の ruleId に対応)。
+        status:
+          $ref: "#/components/schemas/RiskStatus"
+        title:
+          type: string
+        observation:
+          type: string
+        recommendedChecks:
+          type: array
+          items:
+            type: string
+        distanceM:
+          type: number
+        evidenceIds:
+          type: array
+          items:
+            type: string
+        algorithmVersion:
+          type: string
+
+    ElevationPoint:
+      type: object
+      required: [coordinate, elevationM, source, quality]
+      properties:
+        coordinate:
+          $ref: "#/components/schemas/Coordinate"
+        elevationM:
+          type: number
+          description: 標高 (メートル)。負標高は正当な値として扱う。
+        source:
+          $ref: "#/components/schemas/DemSource"
+        quality:
+          $ref: "#/components/schemas/QualitySummary"
+
+    ElevationSummary:
+      type: object
+      required: [minM, maxM, meanM]
+      properties:
+        minM:
+          type: number
+        maxM:
+          type: number
+        meanM:
+          type: number
+
+    SlopeSummary:
+      type: object
+      required: [maxDeg, meanDeg, bins]
+      properties:
+        maxDeg:
+          type: number
+          minimum: 0
+          maximum: 90
+        meanDeg:
+          type: number
+          minimum: 0
+          maximum: 90
+        bins:
+          type: array
+          description: slopeBinsDeg で区切った区分ごとの集計。
+          items:
+            type: object
+            required: [rangeDeg, ratio]
+            properties:
+              rangeDeg:
+                type: array
+                items:
+                  type: number
+                minItems: 2
+                maxItems: 2
+              ratio:
+                type: number
+                minimum: 0
+                maximum: 1
+
+    LandformItem:
+      type: object
+      required: [normalizedClass, sourceDataset, sourceDate]
+      properties:
+        originalCode:
+          type: string
+        normalizedClass:
+          type: string
+          enum:
+            - MOUNTAIN_SLOPE
+            - CLIFF_TERRACE_CLIFF
+            - LANDSLIDE
+            - DEPRESSION_SHALLOW_VALLEY
+            - FLOODPLAIN_COASTAL_PLAIN
+            - BACK_MARSH
+            - FORMER_RIVER_CHANNEL
+            - VALLEY_PLAIN
+            - ARTIFICIAL_FILL
+            - OTHER
+        sourceDataset:
+          type: string
+        sourceDate:
+          type: string
+        description:
+          type: string
+        distanceM:
+          type: number
+          description: 境界付近で複数区分が交差する場合の、対象地点からの距離。
+
+    AnalysisResult:
+      type: object
+      required: [analysisId, status, quality, cards, evidence]
+      properties:
+        analysisId:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+        status:
+          $ref: "#/components/schemas/AnalysisStatus"
+        elevation:
+          $ref: "#/components/schemas/ElevationSummary"
+        slope:
+          $ref: "#/components/schemas/SlopeSummary"
+        landforms:
+          type: array
+          items:
+            $ref: "#/components/schemas/LandformItem"
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheckCard"
+        quality:
+          $ref: "#/components/schemas/QualitySummary"
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/Provenance"
+
+    ResponseMeta:
+      type: object
+      required: [requestId, algorithmVersion, generatedAt]
+      properties:
+        requestId:
+          type: string
+        algorithmVersion:
+          type: string
+          description: SemVer または Git SHA。
+        generatedAt:
+          type: string
+          format: date-time
+
+    SuccessEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data: {}
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+
+    AnalysisResponseEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/AnalysisResult"
+
+    PointAnalysisRequest:
+      type: object
+      required: [center]
+      properties:
+        center:
+          $ref: "#/components/schemas/Coordinate"
+        radiusM:
+          type: number
+          minimum: 50
+          maximum: 2000
+          default: 500
+          description: 公開デモは1000mまで。
+        layers:
+          type: array
+          items:
+            type: string
+            enum: [elevation, slope, landform]
+        slopeBinsDeg:
+          type: array
+          description: 傾斜区分の既定値は視覚表示用であり、法令・設計基準ではない。
+          items:
+            type: number
+            minimum: 0
+            maximum: 90
+        persist:
+          type: boolean
+          default: false
+
+    ProfileAnalysisRequest:
+      type: object
+      required: [line]
+      properties:
+        line:
+          type: object
+          description: GeoJSON LineString (測地距離で計測)。
+          required: [type, coordinates]
+          properties:
+            type:
+              const: LineString
+            coordinates:
+              type: array
+              minItems: 2
+              items:
+                type: array
+                items:
+                  type: number
+                minItems: 2
+                maxItems: 2
+        sampleIntervalM:
+          type: number
+          exclusiveMinimum: 0
+          description: DEM実効解像度未満の間隔は指定できない。
+        maxSamples:
+          type: integer
+          minimum: 1
+          maximum: 2000
+          default: 2000
+        persist:
+          type: boolean
+          default: false
+
+    AreaAnalysisRequest:
+      type: object
+      required: [geometry]
+      properties:
+        geometry:
+          type: object
+          description: GeoJSON Circle相当 (center+radiusM) またはPolygon。最大100頂点・4km²。
+        layers:
+          type: array
+          items:
+            type: string
+            enum: [elevation, slope, landform]
+        persist:
+          type: boolean
+          default: false
+
+    ExportRequest:
+      type: object
+      required: [format]
+      properties:
+        format:
+          type: string
+          enum: [markdown, csv, json]
+
+    ExportResult:
+      type: object
+      required: [format, generatedAt]
+      properties:
+        format:
+          type: string
+          enum: [markdown, csv, json]
+        downloadUrl:
+          type: string
+          format: uri
+        content:
+          type: string
+          description: 小さい成果物はインライン返却する場合がある。
+        generatedAt:
+          type: string
+          format: date-time
+
+    Capabilities:
+      type: object
+      required: [postgis, layers, exportFormats]
+      properties:
+        postgis:
+          type: boolean
+        layers:
+          type: array
+          items:
+            type: string
+        exportFormats:
+          type: array
+          items:
+            type: string
+            enum: [markdown, csv, json]
+
+    SourceInfo:
+      type: object
+      required: [sourceKey, sourceName, sourceUrl, termsUrl, cacheTtlSec]
+      properties:
+        sourceKey:
+          type: string
+        sourceName:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+        termsUrl:
+          type: string
+          format: uri
+        resolutionM:
+          type: number
+        cacheTtlSec:
+          type: integer
+          minimum: 0
+          description: 帰属・規約上キャッシュ不可のソースは0。
+
+    SourceHealth:
+      type: object
+      required: [sourceKey, successRatio, lastCheckedAt]
+      properties:
+        sourceKey:
+          type: string
+        successRatio:
+          type: number
+          minimum: 0
+          maximum: 1
+        lastCheckedAt:
+          type: string
+          format: date-time
+        recentErrorCodes:
+          type: array
+          items:
+            type: string
+
+    HealthLiveResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          const: ok
+
+    HealthReadyResponse:
+      type: object
+      required: [status, checks]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        checks:
+          type: object
+          additionalProperties:
+            type: boolean
+
+    ErrorCode:
+      type: string
+      enum:
+        - INVALID_INPUT
+        - UNAUTHENTICATED
+        - FORBIDDEN
+        - NO_COVERAGE
+        - CONFIG_VERSION_CONFLICT
+        - ANALYSIS_AREA_TOO_LARGE
+        - INSUFFICIENT_DATA
+        - RATE_LIMITED
+        - UPSTREAM_INVALID_RESPONSE
+        - UPSTREAM_UNAVAILABLE
+        - INTERNAL_ERROR
+
+    ProblemDetails:
+      type: object
+      description: RFC 9457 (Problem Details for HTTP APIs) 準拠のエラー応答本体。
+        エラー応答の content-type は application/problem+json であり、
+        requestId は全エラー応答に必ず含まれる (障害調査でログと突合するため)。
+      required: [type, title, status, code, requestId]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          default: "about:blank"
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          $ref: "#/components/schemas/ErrorCode"
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        requestId:
+          type: string
+
+  responses:
+    InvalidInput:
+      description: 形式・範囲違反。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    NoCoverage:
+      description: 対象地点にデータなし。安全であることは意味しない。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    ConfigVersionConflict:
+      description: 再現条件 (config_version) の不一致。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    AnalysisAreaTooLarge:
+      description: 範囲・点数上限超過。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    InsufficientData:
+      description: 計算に必要な有効セル不足。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    RateLimited:
+      description: 利用上限。
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    UpstreamInvalidResponse:
+      description: 外部応答異常。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    UpstreamUnavailable:
+      description: 外部停止・タイムアウト。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    Unauthorized:
+      description: 認証が必要 (Cloudflare Access JWT未検証)。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    Forbidden:
+      description: ロール権限不足。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    InternalError:
+      description: 内部異常。詳細は非公開。
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"

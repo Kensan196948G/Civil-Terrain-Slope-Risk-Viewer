@@ -1,0 +1,14 @@
+dist/
+build/
+.wrangler/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+pnpm-lock.yaml
+
+# Claude運用ポリシー文書 (ClaudeOS)。コードではなく運用ルール記述のため
+# フォーマット対象外とし、意図しない改行・体裁変更を避ける。
+.claude/
+CLAUDE.md
+.coderabbit.yaml

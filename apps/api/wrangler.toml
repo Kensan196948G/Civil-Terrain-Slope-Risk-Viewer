@@ -1,0 +1,16 @@
+name = "civil-terrain-api"
+main = "src/index.ts"
+compatibility_date = "2025-11-01"
+
+# Local dev (`wrangler dev`) and deploy require the wrangler CLI. It is added as
+# a devDependency once the deploy pipeline is wired; Sprint 0 only verifies
+# typecheck / test / lint, so wrangler is intentionally not installed yet.
+
+[observability]
+enabled = true
+
+# Database access is provided through a Hyperdrive binding (see src/env.ts).
+# Uncomment and set the config id when the database is connected:
+# [[hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = "<hyperdrive-config-id>"

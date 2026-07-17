@@ -1,0 +1,128 @@
+{
+  "_provenance": {
+    "source": "SYNTHETIC (hand-authored, not real GSI data)",
+    "generator": "tests/fixtures/generate/generate.ts",
+    "encoding": "GSI DEM PNG format (design spec 8.2): x = 2^16 R + 2^8 G + B, h = signed(x) * 0.01 m",
+    "resolutionM": 0.01,
+    "noDataSentinel": "x = 2^23 (RGB 128,0,0)",
+    "generatedAt": "2026-07-17",
+    "license": "Synthetic test data authored for this repository. Free to use within tests. Does NOT contain or derive from GSI (Geospatial Information Authority of Japan) tiles."
+  },
+  "algorithm": "Horn 3x3 (design spec 8.3)",
+  "cases": [
+    {
+      "id": "flat-plain",
+      "description": "平面。全セル 12.50 m → 0.000°。",
+      "neighborhood": {
+        "z1": 12.5,
+        "z2": 12.5,
+        "z3": 12.5,
+        "z4": 12.5,
+        "z5": 12.5,
+        "z6": 12.5,
+        "z7": 12.5,
+        "z8": 12.5,
+        "z9": 12.5
+      },
+      "dxMeters": 10,
+      "dyMeters": 10,
+      "expectedSlopeDeg": 0,
+      "precisionDigits": 10
+    },
+    {
+      "id": "east-1to1",
+      "description": "東向き 1:1 勾配 (列 0,10,20 / 10 m) → 45.000°。",
+      "neighborhood": {
+        "z1": 0,
+        "z2": 10,
+        "z3": 20,
+        "z4": 0,
+        "z5": 10,
+        "z6": 20,
+        "z7": 0,
+        "z8": 10,
+        "z9": 20
+      },
+      "dxMeters": 10,
+      "dyMeters": 10,
+      "expectedSlopeDeg": 45,
+      "precisionDigits": 9
+    },
+    {
+      "id": "north-south-1to1",
+      "description": "南北 1:1 勾配 (行 0,10,20 / 10 m) → 45.000°。",
+      "neighborhood": {
+        "z1": 0,
+        "z2": 0,
+        "z3": 0,
+        "z4": 10,
+        "z5": 10,
+        "z6": 10,
+        "z7": 20,
+        "z8": 20,
+        "z9": 20
+      },
+      "dxMeters": 10,
+      "dyMeters": 10,
+      "expectedSlopeDeg": 45,
+      "precisionDigits": 9
+    },
+    {
+      "id": "gentle-east-0.1",
+      "description": "緩い東向き勾配 (列 0,1,2 / 10 m, gradient 0.1) → atan(0.1)=5.7106°。",
+      "neighborhood": {
+        "z1": 0,
+        "z2": 1,
+        "z3": 2,
+        "z4": 0,
+        "z5": 1,
+        "z6": 2,
+        "z7": 0,
+        "z8": 1,
+        "z9": 2
+      },
+      "dxMeters": 10,
+      "dyMeters": 10,
+      "expectedSlopeDeg": 5.710593137499643,
+      "precisionDigits": 9
+    },
+    {
+      "id": "mountain-east-0.5",
+      "description": "山地 fixture 内部の東向き勾配 (列 +5 m/cell, gradient 0.5) → atan(0.5)=26.565°。",
+      "neighborhood": {
+        "z1": 1200,
+        "z2": 1205,
+        "z3": 1210,
+        "z4": 1200,
+        "z5": 1205,
+        "z6": 1210,
+        "z7": 1200,
+        "z8": 1205,
+        "z9": 1210
+      },
+      "dxMeters": 10,
+      "dyMeters": 10,
+      "expectedSlopeDeg": 26.56505117707799,
+      "precisionDigits": 9
+    },
+    {
+      "id": "missing-neighbor",
+      "description": "近傍に欠損 (z6=null) → 補間せず null (spec 8.3)。",
+      "neighborhood": {
+        "z1": 8,
+        "z2": 8,
+        "z3": 8,
+        "z4": 8,
+        "z5": 8,
+        "z6": null,
+        "z7": 8,
+        "z8": 8,
+        "z9": 8
+      },
+      "dxMeters": 10,
+      "dyMeters": 10,
+      "expectedSlopeDeg": null,
+      "precisionDigits": 10
+    }
+  ]
+}

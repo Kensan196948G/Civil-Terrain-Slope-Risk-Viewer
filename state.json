@@ -1,0 +1,126 @@
+{
+  "project": {
+    "name": "Civil-Terrain-Slope-Risk-Viewer",
+    "start_date": "2026-07-17",
+    "release_deadline": "2027-01-17",
+    "phase_mode": "development"
+  },
+  "goal": "Sprint 0基盤構築 (monorepo/CI/fixture/台帳) を完了し、Release Ready または Production Ready へ向けた自律開発を継続する",
+  "phase": "Verify",
+  "kpi": {
+    "success_rate_target": 0.9,
+    "ci_success_rate": 1.0,
+    "test_pass_rate": 1.0,
+    "security_critical": 0,
+    "blocker_count": 0
+  },
+  "execution": {
+    "max_duration_minutes": 300,
+    "repair_count": 0,
+    "max_repair": 3,
+    "same_error_limit": 2
+  },
+  "automation": {
+    "auto_issue_generation": true,
+    "self_evolution": true
+  },
+  "completed_issues": [
+    {
+      "id": "SPRINT0-DOMAIN",
+      "title": "packages/domain スケルトン実装完了",
+      "detail": "RiskStatus/QualityGrade/DemSource/Coordinate/Provenance/QualitySummary/CheckCard/AnalysisStatus/ErrorCode/ProblemDetails/CardRule を実装。typecheck・lint・test(15/15)すべて成功。"
+    },
+    {
+      "id": "SPRINT0-GEO",
+      "title": "packages/geo スケルトン実装完了",
+      "detail": "dem-decode(標高復元 x=2^16R+2^8G+B、2^23=無効値)・slope(Horn法3x3傾斜計算)・tile-coordinate(XYZ/Web Mercator変換、緯度±85.05112878クランプ)を実装。詳細設計仕様書8章と完全一致を検証。typecheck・test(21/21)成功。"
+    },
+    {
+      "id": "SPRINT0-ADAPTERS",
+      "title": "packages/adapters スケルトン実装完了",
+      "detail": "url-safety(SSRF対策: IPv4/IPv6 private/loopback/link-localブロック、IPv4-mapped IPv6再帰チェック、allowlist照合、defense in depth)・data-adapter interface(9.1節準拠)を実装。tsconfig lib方針を@types/node方式からDOM lib方式(lib:[\"ES2022\",\"DOM\"])へ統一(Cloudflare WorkersはWeb標準API環境でNode.js固有APIが実行時に存在しないため)。typecheck・test(13/13)・lint成功。"
+    },
+    {
+      "id": "SPRINT0-DB",
+      "title": "packages/db スケルトン実装完了",
+      "detail": "connection.ts(DatabaseConfig/isPostgresConnectionString/loadDatabaseConfig)を実装。process.envを直接参照せずenv: Record<string,string|undefined>を引数で受け取る環境非依存設計(Cloudflare Workers env bindingとNode.js process.env両対応)。typecheck・test(8/8)成功。"
+    },
+    {
+      "id": "SPRINT0-UI",
+      "title": "packages/ui スケルトン実装完了",
+      "detail": "StatusBadge等の共有UIコンポーネントを実装。tsconfig lib:[\"ES2022\",\"DOM\",\"DOM.Iterable\"]+jsx:\"react-jsx\"のローカルオーバーライドパターンを確立(後続のadapters/apps/api/apps/web方針の参考元)。typecheck・test(4/4)成功。"
+    },
+    {
+      "id": "SPRINT0-OPENAPI",
+      "title": "openapi/openapi.yaml 初版作成完了",
+      "detail": "OpenAPI 3.1.0形式で全12エンドポイントを実装(health/live,health/ready,capabilities,sources,elevation,analyses/point,analyses/profile,analyses/area,analyses/{publicId},analyses/{publicId}/exports,tiles/proxy,admin/source-health)。詳細設計仕様書7-9,11-12章とpackages/domain型定義に忠実。cloudflareAccessJwt認証スキーム、RFC 9457 ProblemDetails形式エラー応答を定義。"
+    },
+    {
+      "id": "SPRINT0-CI",
+      "title": ".github/workflows/ci.yml 作成完了",
+      "detail": "pnpm/action-setup(10.26.2)+setup-node(20.19.0, pnpm cache)→install --frozen-lockfile→lint→format→typecheck→test→build→pnpm audit --audit-level=high(continue-on-error)の直列ジョブ。YAML構文検証済み。GH-AUTH-001解消(GitHub remote設定・gh再認証)まで実機での動作確認は未実施。"
+    },
+    {
+      "id": "SPRINT0-WEB",
+      "title": "apps/web スケルトン実装完了",
+      "detail": "React 18.3 + Vite 5.4 + TypeScript。@civil-terrain/uiのStatusBadge(status=\"REFERENCE\")を実表示して依存疎通を確認。tsconfig lib:[\"ES2022\",\"DOM\",\"DOM.Iterable\"]+jsx:\"react-jsx\"+noEmit:trueをローカルオーバーライド(SPAなので宣言ファイル出力は不要、uiパッケージのnoEmit:falseとの違いは意図的)。依存バージョンはworkspace整合性を優先しreact^18.3.1/vite^5.4.21/vitest^2.1.8に統一(React19/vite8等の最新版はroot vitest.workspace.tsとの非互換リスクがあるため見送り)。typecheck・test(2/2)・build・lint成功。root単位のpnpm test(11 files/63 tests)・pnpm typecheckでworkspace非破壊も確認済み。"
+    },
+    {
+      "id": "SPRINT0-API",
+      "title": "apps/api スケルトン実装完了 (Cloudflare Workers)",
+      "detail": "fetch handlerが全体try/catchでProblem Detailsを保証しcrypto.randomUUID()でrequestIdを発行。router.tsは手動パステーブル(外部ルーティングライブラリ不使用)で/health/live・/health/readyを実装。未定義ルート/不一致メソッドは404(NO_COVERAGE)を転用せず400 INVALID_INPUTに統一(NO_COVERAGEは地理データ欠損=安全でないという監視上重要な意味を専有するため)。@cloudflare/workers-typesは使わずEnv/Hyperdrive/ExecutionContextを使用フィールドのみ自前定義(DOM libでRequest/Response/URL/crypto解決、他packagesのゼロ外部依存方針と整合)。/health/readyは@civil-terrain/dbのloadDatabaseConfigで接続文字列を構文検証のみ(実接続なし)し、未設定/非PostgreSQLなら503 UPSTREAM_UNAVAILABLEを返す。wranglerはSprint 0では未導入(typecheck/test/lintに不要、dev/deploy配線Sprintで追加予定)。typecheck・test(8/8)・lint・build・format全成功。"
+    },
+    {
+      "id": "SPRINT0-FIXTURES",
+      "title": "tests/fixtures ゴールデンDEMデータ作成完了",
+      "detail": "合成DEM PNGタイル7枚(山地/平地/低地/負標高/海岸/DEM境界/データ範囲外)、地形分類10正規化区分+境界サンプル、傾斜・タイル座標の解析的ゴールデン値をgenerate/spec.ts一次情報から生成(node tests/fixtures/generate/generate.tsで再実行可能、pngjs等の外部PNGライブラリ不使用、標準zlib+自前CRC32のみでchunk構築)。golden.test.ts(50件)はDEM round-trip・encodeElevation/decodeElevation恒等性・Horn法傾斜・XYZタイル座標(高緯度クランプ発動含む)を検証。期待値は実装出力のスナップショットではなく数式から独立導出し、Python PILでも標高復元をクロス検証済み(循環検証を回避)。lonLatToTileXY(0,89,z)が緯度クランプ後にy=-1(範囲外)を返す挙動をゴールデンテストで固定化したが、下流での安全なハンドリング(範囲外座標チェック等)はSprint 1のタイル生成実装時に再検討すること。"
+    },
+    {
+      "id": "SPRINT0-REVIEW",
+      "title": "Sprint 0 CodeRabbitレビュー完了 + High/Medium修正 + PR #1 Ready化",
+      "detail": "CodeRabbit CLI v0.6.5 + 手動精読によるレビュー結果: Critical=0 High=1 Medium=5 Low=18。同PR内で修正: [H1] card-ruleのNaN/±InfinityがREFERENCEへ丸められる問題をNumber.isFiniteガードでUNKNOWN化(Unknown is not Safe、回帰テスト3件追加)、[M1] openapiエラー応答をapplication/problem+jsonへ統一しrequestIdをrequired化(http.tsでも静的強制)、[M2] ErrorCodeへUNAUTHENTICATED(401)/FORBIDDEN(403)追加とopenapi enum同期、[M3] .gitignoreを.env/.env.*+!.env.exampleへ是正。M4はIssue #7、M5はIssue #3拡張、Low18件はIssue #8へ棚卸し(CR#20はIssue #2補足)。修正後テスト124/124、CI 4連続success(run 29545965895/29546098734/29546633668/29546946665)でSTABLE基準(通常N=3)超過。PR #1をReady for review化しCodeRabbit GitHub Appレビューを起動。merge判断は人間待ち。"
+    },
+    {
+      "id": "GH-AUTH-001-RESOLVED",
+      "title": "GitHub連携復旧: リポジトリ作成・push・Draft PR #1作成",
+      "detail": "gh認証の復旧(Kensan196948G、repo/workflow権限)をセッション中に確認し、人間承認を得た上でprivateリポジトリ https://github.com/Kensan196948G/Civil-Terrain-Slope-Risk-Viewer を作成。ローカルmaster→main改名、mainをbaseline(ce65576)としてpush、sprint-0/monorepo-foundation(3e24add基盤+aea6836docs)をpushし、Draft PR #1をmain宛に作成。main直接pushはbaseline初期化のみで以降は禁止運用。PR #1のCI初回実環境実行(run 29545965895)はsuccess(1m2s)。install/lint/format/typecheck/test/build/dependency auditの全ステップがGitHub Actions実環境で通過し、CI YAML検証が完了した。"
+    },
+    {
+      "id": "SPRINT0-VERIFY",
+      "title": "Sprint 0 疎通確認 (install/lint/format/typecheck/test/build) + フォーマット統一",
+      "detail": "CTOがfixtures-builderの成果物を検証し、vitest.workspace.tsへ\"tests/fixtures\"を統合(pnpm testで全14ファイル121テストが疎通)。pnpm-workspace.yaml(apps/*, packages/*)とvitest.workspace.tsは独立設定であり、tests/fixturesのようなpackage.json非依存ディレクトリはpnpm -r run typecheckの対象外になる抜け穴を発見。tests/fixtures/tsconfig.jsonを新設(.ts拡張子付きimportのためallowImportingTsExtensions: trueが必要)し、ルートtypecheckスクリプトへ統合して解消。さらにpnpm formatでリポジトリ全体を確認したところ既存コミット済み24ファイル(docs/*.md、README.md、詳細設計仕様書、要件定義書、package.json、packages/adapters・domainの一部ソース)でスタイル崩れを検出。差分が意味を変えない体裁変更のみであることを確認した上でformat:fixを適用し、test再実行でロジック非破壊を確認。.claude/・CLAUDE.md・.coderabbit.yamlはClaudeOS運用文書のためPrettier対象外として.prettierignoreへ追加。最終的にinstall/lint(exit 0)/format(全通過)/typecheck(exit 0)/test(121/121)/build(7プロジェクト全成功)の疎通を確認した。"
+    }
+  ],
+  "blocked_issues": [],
+  "learning": {
+    "failure_patterns": [
+      {
+        "id": "GH-PR-EDIT-PROJECTS-CLASSIC",
+        "title": "gh pr edit がProjects classic廃止のGraphQLエラーで失敗する",
+        "detail": "gh pr edit --body は内部でprojectCardsをGraphQL照会するため、Projects classic廃止済みアカウントでは『Projects (classic) is being deprecated』エラーでexit 1になる(PR本文は未更新)。回避策: REST APIを直接使う。gh api repos/<owner>/<repo>/pulls/<n> -X PATCH -F \"body=@<file>\" で更新できる。本文が長い場合はファイル渡し(@path)にするとクォート問題も回避できる。"
+      }
+    ],
+    "success_patterns": [
+      {
+        "id": "DOC-STRUCTURE-CONFLICT",
+        "title": "README/開発開始ガイドと詳細設計仕様書でリポジトリ構成に差異",
+        "detail": "詳細設計仕様書4章は packages/{domain,dem,geo,contracts,config,ui} + apps/api/src/adapters + 独立 db/ + fixtures/ を示すが、README/開発開始ガイドは packages/{domain,geo,adapters,db,ui} のシンプルな5分割。Sprint 0はREADME版(小さく始める)を採用し、詳細設計書の型・インターフェースをその中に実装する方針とした。将来、要確認カードルールエンジンやDEM取得量が増えた場合にdem/geo分離・contracts独立を再検討し、設計判断記録に残すこと。"
+      },
+      {
+        "id": "TSCONFIG-LIB-OVERRIDE",
+        "title": "tsconfig.base.jsonは環境非依存を維持し、各パッケージがlibをローカルオーバーライドする",
+        "detail": "tsconfig.base.jsonはlib:[\"ES2022\"]のみに固定(Node.js/Cloudflare Workers/ブラウザいずれにも依存しない)。DOM API(URL/AbortSignal/fetch等)が必要なパッケージ(adapters等)は@types/nodeを追加するのではなく、ローカルtsconfig.jsonでlib:[\"ES2022\",\"DOM\"]をオーバーライドする方式に統一。理由: Cloudflare WorkersはWeb標準API環境でNode.js固有API(process/Buffer/fs)は実行時に存在せず、@types/nodeを入れると型チェックは通るのに実行時に落ちるコードを許してしまう。packages/uiが元々lib:[\"ES2022\",\"DOM\",\"DOM.Iterable\"]+jsx:\"react-jsx\"という同型パターンを先行採用していたことが発見の契機。apps/api・apps/webにも同方針を継承させた。"
+      },
+      {
+        "id": "ROUTE-ERROR-CODE-ISOLATION",
+        "title": "HTTPルーティングエラーにドメイン固有のエラーコードを転用しない",
+        "detail": "apps/apiのrouter.tsで、未定義パス/不一致メソッドの応答コードとしてNO_COVERAGE(404)を流用せずINVALID_INPUT(400)を採用。理由: NO_COVERAGEは「対象地域の地形データが提供範囲外」という業務的に重要な意味をpackages/domainのErrorCode taxonomy内で専有しており、これをルーティング起因の404(URLタイポ等)にも使うと、admin/source-healthのような監視ダッシュボードで実データ欠損と実装ミスの集計が混ざってしまう。ドメインエラーコードは業務的意味の一意性を優先し、ルーティングエラーには意味的に最も近い汎用コードを充てる、という原則をSprint 0で確立。405(メソッド不一致)も表現するコードがないため同じく400に集約。将来ROUTE_NOT_FOUND等の専用コードが必要になった場合はErrorCode enumへの追加を検討すること。"
+      },
+      {
+        "id": "VITEST-WORKSPACE-INDEPENDENT-FROM-PNPM-WORKSPACE",
+        "title": "vitest.workspace.tsとpnpm-workspace.yamlは独立設定であり自動同期しない",
+        "detail": "pnpm-workspace.yamlのpackages一覧(apps/*, packages/*)と、vitest.workspace.tsのプロジェクト一覧は別々の設定であり自動同期しない。package.jsonを持たない/workspaceパッケージでないディレクトリ(tests/fixtures等)は、vitest.workspace.tsに明示追加しない限りpnpm testの対象外になり、さらにpnpm -r run typecheckもpnpm-workspace.yaml対象のパッケージにしか及ばないため型チェックの抜け穴にもなる。tests/fixturesでは両方に個別対応が必要だった: (1)vitest.workspace.tsへの追加(テスト実行)、(2)専用tsconfig.json新設+ルートtypecheckスクリプトへの明示追記(型チェック)。将来tests/integration・tests/e2e等の同種ディレクトリを追加する際は同じ観点で疎通確認すること。"
+      }
+    ]
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "_provenance": {
+    "source": "SYNTHETIC (hand-authored, not real GSI data)",
+    "generator": "tests/fixtures/generate/generate.ts",
+    "encoding": "GSI DEM PNG format (design spec 8.2): x = 2^16 R + 2^8 G + B, h = signed(x) * 0.01 m",
+    "resolutionM": 0.01,
+    "noDataSentinel": "x = 2^23 (RGB 128,0,0)",
+    "generatedAt": "2026-07-17",
+    "license": "Synthetic test data authored for this repository. Free to use within tests. Does NOT contain or derive from GSI (Geospatial Information Authority of Japan) tiles."
+  },
+  "fixtures": [
+    {
+      "id": "01-mountain",
+      "fileName": "01-mountain.png",
+      "title": "山地 (Mountain slope)",
+      "category": "MOUNTAIN",
+      "description": "高標高の東向き一様傾斜。列ごとに +5.00 m (1200.00〜1235.00 m)。dx=dy=10 m のとき内部 3x3 で東傾斜 atan(0.5)=26.565°。",
+      "representativePoint": { "lon": 138.7275, "lat": 35.3606, "zoom": 14 },
+      "mimicsDemSource": "DEM5A",
+      "width": 8,
+      "height": 8,
+      "stats": {
+        "validCount": 64,
+        "invalidCount": 0,
+        "minM": 1200,
+        "maxM": 1235,
+        "coverage": "FULL"
+      },
+      "intendedElevationsM": [
+        [1200, 1205, 1210, 1215, 1220, 1225, 1230, 1235],
+        [1200, 1205, 1210, 1215, 1220, 1225, 1230, 1235],
+        [1200, 1205, 1210, 1215, 1220, 1225, 1230, 1235],
+        [1200, 1205, 1210, 1215, 1220, 1225, 1230, 1235],
+        [1200, 1205, 1210, 1215, 1220, 1225, 1230, 1235],
+        [1200, 1205, 1210, 1215, 1220, 1225, 1230, 1235],
+        [1200, 1205, 1210, 1215, 1220, 1225, 1230, 1235],
+        [1200, 1205, 1210, 1215, 1220, 1225, 1230, 1235]
+      ]
+    },
+    {
+      "id": "02-plain",
+      "fileName": "02-plain.png",
+      "title": "平地 (Flat plain)",
+      "category": "PLAIN",
+      "description": "完全平坦 12.50 m。傾斜 0.000° (UT-SLP-01 平面0°)。coverage=FULL。",
+      "representativePoint": { "lon": 139.6, "lat": 36, "zoom": 14 },
+      "mimicsDemSource": "DEM5A",
+      "width": 8,
+      "height": 8,
+      "stats": {
+        "validCount": 64,
+        "invalidCount": 0,
+        "minM": 12.5,
+        "maxM": 12.5,
+        "coverage": "FULL"
+      },
+      "intendedElevationsM": [
+        [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5],
+        [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5],
+        [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5],
+        [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5],
+        [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5],
+        [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5],
+        [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5],
+        [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5]
+      ]
+    },
+    {
+      "id": "03-lowland",
+      "fileName": "03-lowland.png",
+      "title": "低地 (Low-lying land)",
+      "category": "LOWLAND",
+      "description": "低標高の緩い南向き傾斜。行ごとに +0.10 m (2.00〜2.70 m)。dx=dy=10 m のとき南傾斜 atan(0.01)=0.573°。",
+      "representativePoint": { "lon": 135.5, "lat": 34.68, "zoom": 14 },
+      "mimicsDemSource": "DEM5A",
+      "width": 8,
+      "height": 8,
+      "stats": { "validCount": 64, "invalidCount": 0, "minM": 2, "maxM": 2.7, "coverage": "FULL" },
+      "intendedElevationsM": [
+        [2, 2, 2, 2, 2, 2, 2, 2],
+        [2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1],
+        [2.2, 2.2, 2.2, 2.2, 2.2, 2.2, 2.2, 2.2],
+        [2.3, 2.3, 2.3, 2.3, 2.3, 2.3, 2.3, 2.3],
+        [2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4],
+        [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5],
+        [2.6, 2.6, 2.6, 2.6, 2.6, 2.6, 2.6, 2.6],
+        [2.7, 2.7, 2.7, 2.7, 2.7, 2.7, 2.7, 2.7]
+      ]
+    },
+    {
+      "id": "04-negative",
+      "fileName": "04-negative.png",
+      "title": "負標高 (Below sea level)",
+      "category": "NEGATIVE_ELEVATION",
+      "description": "全面 -3.50 m の海抜ゼロメートル地帯。負標高は正当な値であり欠損へ丸めない (spec 8.2)。",
+      "representativePoint": { "lon": 136.9, "lat": 35.05, "zoom": 14 },
+      "mimicsDemSource": "DEM5A",
+      "width": 8,
+      "height": 8,
+      "stats": {
+        "validCount": 64,
+        "invalidCount": 0,
+        "minM": -3.5,
+        "maxM": -3.5,
+        "coverage": "FULL"
+      },
+      "intendedElevationsM": [
+        [-3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5],
+        [-3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5],
+        [-3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5],
+        [-3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5],
+        [-3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5],
+        [-3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5],
+        [-3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5],
+        [-3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5, -3.5]
+      ]
+    },
+    {
+      "id": "05-coast",
+      "fileName": "05-coast.png",
+      "title": "海岸 (Coastline crossing sea level)",
+      "category": "COAST",
+      "description": "海側から陸側へ列ごとに +1.00 m (-2.00〜+5.00 m)。c=2 で厳密に 0.00 m。負・ゼロ・正を1枚で網羅 (UT-DEM-01)。",
+      "representativePoint": { "lon": 139.48, "lat": 35.3, "zoom": 14 },
+      "mimicsDemSource": "DEM5B",
+      "width": 8,
+      "height": 8,
+      "stats": { "validCount": 64, "invalidCount": 0, "minM": -2, "maxM": 5, "coverage": "FULL" },
+      "intendedElevationsM": [
+        [-2, -1, 0, 1, 2, 3, 4, 5],
+        [-2, -1, 0, 1, 2, 3, 4, 5],
+        [-2, -1, 0, 1, 2, 3, 4, 5],
+        [-2, -1, 0, 1, 2, 3, 4, 5],
+        [-2, -1, 0, 1, 2, 3, 4, 5],
+        [-2, -1, 0, 1, 2, 3, 4, 5],
+        [-2, -1, 0, 1, 2, 3, 4, 5],
+        [-2, -1, 0, 1, 2, 3, 4, 5]
+      ]
+    },
+    {
+      "id": "06-boundary",
+      "fileName": "06-boundary.png",
+      "title": "DEM境界 (Partial coverage boundary)",
+      "category": "DEM_BOUNDARY",
+      "description": "左半分 (c<4) は有効 8.00 m、右半分 (c>=4) は無効値 (null)。coverage=PARTIAL。null 隣接セルの傾斜は null (補間しない, spec 8.3)。",
+      "representativePoint": { "lon": 140, "lat": 36, "zoom": 14 },
+      "mimicsDemSource": "DEM10B",
+      "width": 8,
+      "height": 8,
+      "stats": {
+        "validCount": 32,
+        "invalidCount": 32,
+        "minM": 8,
+        "maxM": 8,
+        "coverage": "PARTIAL"
+      },
+      "intendedElevationsM": [
+        [8, 8, 8, 8, null, null, null, null],
+        [8, 8, 8, 8, null, null, null, null],
+        [8, 8, 8, 8, null, null, null, null],
+        [8, 8, 8, 8, null, null, null, null],
+        [8, 8, 8, 8, null, null, null, null],
+        [8, 8, 8, 8, null, null, null, null],
+        [8, 8, 8, 8, null, null, null, null],
+        [8, 8, 8, 8, null, null, null, null]
+      ]
+    },
+    {
+      "id": "07-out-of-range",
+      "fileName": "07-out-of-range.png",
+      "title": "データ範囲外 (No DEM coverage)",
+      "category": "OUT_OF_RANGE",
+      "description": "全セル無効値 (null)。coverage=NONE。NONE は「低品質」ではなく「有効データ皆無」であり REFERENCE/Safe へ丸めない (Unknown is not Safe)。",
+      "representativePoint": { "lon": 145, "lat": 30, "zoom": 14 },
+      "mimicsDemSource": "DEM10B",
+      "width": 8,
+      "height": 8,
+      "stats": {
+        "validCount": 0,
+        "invalidCount": 64,
+        "minM": null,
+        "maxM": null,
+        "coverage": "NONE"
+      },
+      "intendedElevationsM": [
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null]
+      ]
+    }
+  ]
+}
