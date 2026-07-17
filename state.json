@@ -6,7 +6,8 @@
     "phase_mode": "development"
   },
   "goal": "Sprint 0基盤構築 (monorepo/CI/fixture/台帳) を完了し、Release Ready または Production Ready へ向けた自律開発を継続する",
-  "phase": "Build",
+  "phase": "Monitor",
+  "resume_point": "次セッション: (1) apps/web 地図クリック→/elevation 呼び出し→標高表示の連携 (vite devProxyまたはwrangler dev併用、Issue化から)、(2) Issue #2 secret scan/SAST、(3) Issue #4 NormalizedLandformClass、(4) Issue #8/#14 棚卸し。全PR (#1,#9,#11,#13,#15) merge済み・open PRゼロ・テスト200/200・E2E 3本・CI全緑の状態から開始。",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
@@ -74,6 +75,11 @@
       "id": "SPRINT0-FIXTURES",
       "title": "tests/fixtures ゴールデンDEMデータ作成完了",
       "detail": "合成DEM PNGタイル7枚(山地/平地/低地/負標高/海岸/DEM境界/データ範囲外)、地形分類10正規化区分+境界サンプル、傾斜・タイル座標の解析的ゴールデン値をgenerate/spec.ts一次情報から生成(node tests/fixtures/generate/generate.tsで再実行可能、pngjs等の外部PNGライブラリ不使用、標準zlib+自前CRC32のみでchunk構築)。golden.test.ts(50件)はDEM round-trip・encodeElevation/decodeElevation恒等性・Horn法傾斜・XYZタイル座標(高緯度クランプ発動含む)を検証。期待値は実装出力のスナップショットではなく数式から独立導出し、Python PILでも標高復元をクロス検証済み(循環検証を回避)。lonLatToTileXY(0,89,z)が緯度クランプ後にy=-1(範囲外)を返す挙動をゴールデンテストで固定化したが、下流での安全なハンドリング(範囲外座標チェック等)はSprint 1のタイル生成実装時に再検討すること。"
+    },
+    {
+      "id": "SPRINT2-WRANGLER",
+      "title": "wrangler dev配線 + Workers bundle dry-run CIゲート + Node 22引上げ (PR #15 merged, Issue #5/#7)",
+      "detail": "apps/apiへwrangler 4.111 devDependencyとdevスクリプト(port 8787)を配線。本環境はworkerd起動不能のため、代替としてCIへwrangler deploy --dry-runステップを常設(バンドル25.30KiB成功、Cloudflare認証不要をreviewerが実証)。CIがNode 20.19でwrangler要件(>=22)により失敗→engines.nodeを>=22.6.0、CI setup-nodeを22へ引上げ(Node 20はEOL済み)。fixtures:generateへ--experimental-strip-types付与でIssue #7も解消。deployスクリプトは意図的に未配線(デプロイ=人間承認の手動操作)。実起動の60秒確認手順はIssue #5クローズコメントに記載。レビューC0/H0/M0/L2(任意)。人間承認でsquash merge(64c730a)。"
     },
     {
       "id": "SPRINT2-ELEVATION",

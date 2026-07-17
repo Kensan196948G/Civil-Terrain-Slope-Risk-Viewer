@@ -157,7 +157,7 @@ flowchart LR
 - ✅ README・docs初版
 - ✅ Sprint 0: monorepoスケルトン実装 (`apps/*`, `packages/*`) + ゴールデンfixture (当時121テスト、現在200テスト全パス)
 - ✅ OpenAPI 3.1初版 (`openapi/openapi.yaml`)
-- ✅ CI (`.github/workflows/ci.yml`、GitHub Actions実環境でPR #1にて成功確認済み。secret scan/SASTはSprint 1以降)
+- ✅ CI (`.github/workflows/ci.yml`、Node 22。lint/format/typecheck/test/build/Workers bundle dry-run/E2E smoke/dependency audit。secret scan/SASTは未実装 → Issue #2)
 - 🚧 MVP機能実装 — Sprint 1で実装済み: MapLibre地図表示 (GSI標準/淡色/写真 + 傾斜量・陰影起伏の切替、帰属常設、表示状態の共有URLハッシュ)。Sprint 2で実装済み: 単点標高API `GET /elevation` (GSI DEMタイル取得→PNG復号→出典・品質付き応答、Web標準stream採用でWorkers/Node両対応)。未着手: 地図UIからの地点指定連携・地形分析・断面分析・確認支援・レポート出力 (Markdown/CSV/JSON)
 - ⬜ Preview / Staging環境
 - ⬜ UAT・セキュリティ確認
