@@ -5,9 +5,9 @@
     "release_deadline": "2027-01-17",
     "phase_mode": "development"
   },
-  "goal": "Sprint 0基盤構築 (monorepo/CI/fixture/台帳) を完了し、Release Ready または Production Ready へ向けた自律開発を継続する",
-  "phase": "Monitor",
-  "resume_point": "次セッション: (1) apps/web 地図クリック→/elevation 呼び出し→標高表示の連携 (vite devProxyまたはwrangler dev併用、Issue化から)、(2) Issue #2 secret scan/SAST、(3) Issue #4 NormalizedLandformClass、(4) Issue #8/#14 棚卸し。全PR (#1,#9,#11,#13,#15) merge済み・open PRゼロ・テスト200/200・E2E 3本・CI全緑の状態から開始。",
+  "goal": "Phase 1「リリース直前」→ Phase 2「本番リリース」→ Phase 3「安定化」を一Goalとして遂行。当面はSprint 2 UI連携 (PR #18) をproduction-safeにしマージ判定Y/Nを提示。",
+  "phase": "Review",
+  "resume_point": "PR #18 (地図クリック→標高表示のUI連携、Issue #17、head de0f08e) がマージ判定Y/N待ち。ローカル検証全green (test 214/214, lint/format/typecheck/build)、CIは新head de0f08eで再走中。READMEを実態へ更新済 (de0f08e)。監査脆弱性6件 (critical1/high2/mod3) は全てdev/testツールチェーン依存で本番非影響 → Issue #19で追跡。未コミットのCLAUDE.md/START_PROMPT.mdはユーザー作業のため保護 (本作業では触れない)。Yなら merge→main CI確認→ (本番Cloudflare/Neon未プロビジョニングのためデプロイは人間手動、環境一意特定不可)。次候補: Issue #2(SAST) #4(NormalizedLandformClass) #8(Low棚卸し) #14(DNS rebinding) #19(監査是正)。",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,

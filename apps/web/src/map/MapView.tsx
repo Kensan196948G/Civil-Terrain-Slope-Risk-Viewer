@@ -9,6 +9,8 @@ export interface MapViewProps {
   readonly view: MapViewState;
   /** 利用者の地図操作 (パン・ズーム) 後に呼ばれる。視点の真実は地図側にある。 */
   readonly onViewChange: (view: MapViewState) => void;
+  /** 地図クリック時の座標通知 (FR-001 地図クリックによる地点指定)。 */
+  readonly onMapClick?: (coordinate: { lat: number; lon: number }) => void;
 }
 
 /**
@@ -19,14 +21,16 @@ export interface MapViewProps {
  * - 視点 (center/zoom) は地図が真実であり、React 側から書き戻さない
  * - 帰属表示は AttributionControl で常設 (要件: 出典表示率 100%)
  */
-export function MapView({ view, onViewChange }: MapViewProps): ReactElement {
+export function MapView({ view, onViewChange, onMapClick }: MapViewProps): ReactElement {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewRef = useRef(view);
   const onViewChangeRef = useRef(onViewChange);
+  const onMapClickRef = useRef(onMapClick);
 
   viewRef.current = view;
   onViewChangeRef.current = onViewChange;
+  onMapClickRef.current = onMapClick;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -53,6 +57,9 @@ export function MapView({ view, onViewChange }: MapViewProps): ReactElement {
         lon: center.lng,
         zoom: map.getZoom(),
       });
+    });
+    map.on("click", (event) => {
+      onMapClickRef.current?.({ lat: event.lngLat.lat, lon: event.lngLat.lng });
     });
 
     mapRef.current = map;

@@ -55,6 +55,25 @@ body {
   padding: 0.15rem 0;
 }
 
+.elevation-panel {
+  border-top: 1px solid #ccc;
+  padding-top: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.elevation-panel h2 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+
+.elevation-panel dt {
+  font-weight: 600;
+}
+
+.elevation-panel dd {
+  margin: 0 0 0.5rem;
+}
+
 .app-map {
   flex: 1;
   min-width: 0;

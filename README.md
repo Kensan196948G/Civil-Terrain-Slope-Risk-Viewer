@@ -2,10 +2,10 @@
 
 > ⛰️ 公開地形データから、工事候補地の標高・傾斜・地形分類を可視化し、現地調査や専門確認へ進むための論点を素早く揃えるWebシステムです。
 
-> 📘 **状態:** Sprint 0完了　🚧 **段階:** MVP実装準備　🎯 **対象:** MVP　📄 **ライセンス:** 未決定
+> 📘 **状態:** Sprint 2進行中　🚧 **段階:** MVP実装中　🎯 **対象:** MVP　📄 **ライセンス:** 未決定
 
 > [!IMPORTANT]
-> 現在のリポジトリは **MVP実装中 (Sprint 2進行中)** です。Sprint 0でmonorepo基盤・ゴールデンfixture・CIが、Sprint 1でMapLibre地図表示とPlaywright E2Eが完了し、Sprint 2で単点標高API `GET /elevation` を実装しています。`pnpm install && pnpm test` (200件) と `pnpm test:e2e` (CI) がグリーンです。地形分析・断面分析・確認支援・レポート出力はこれから実装します。
+> 現在のリポジトリは **MVP実装中 (Sprint 2進行中)** です。Sprint 0でmonorepo基盤・ゴールデンfixture・CIが、Sprint 1でMapLibre地図表示とPlaywright E2Eが完了し、Sprint 2で単点標高API `GET /elevation` と地図クリック→標高表示のUI連携を実装しています。`pnpm install && pnpm test` (214件) と `pnpm test:e2e` (CI) がグリーンです。地形分析・断面分析・確認支援・レポート出力はこれから実装します。
 
 ## 🌟 目指すもの
 
@@ -22,15 +22,15 @@ flowchart LR
 
 ## ✨ MVP機能
 
-| 領域          | 計画機能                                   | 状態              |
-| ------------- | ------------------------------------------ | ----------------- |
-| 📍 地点指定   | 住所、緯度経度、地図クリック、現在地       | 📝 設計済み       |
-| 🗺️ 地図       | 標準地図、陰影起伏、傾斜量、地形分類       | 🚧 Sprint 1実装中 |
-| ⛰️ 地形分析   | 標高統計、傾斜区分、谷・崖・低地等の抽出   | 📝 設計済み       |
-| 📈 断面分析   | 任意線の標高断面、累積上昇・下降、最大傾斜 | 📝 設計済み       |
-| ⚠️ 確認支援   | 要確認・参考情報・判定不能の根拠付きカード | 📝 設計済み       |
-| 🧾 共有・出力 | 共有URL、Markdown、CSV、JSON               | 📝 設計済み       |
-| 🔎 品質表示   | 出典、取得日時、解像度、欠損率、加工方法   | 📝 設計済み       |
+| 領域          | 計画機能                                   | 状態                  |
+| ------------- | ------------------------------------------ | --------------------- |
+| 📍 地点指定   | 住所、緯度経度、地図クリック、現在地       | 🚧 地図クリック実装済 |
+| 🗺️ 地図       | 標準地図、陰影起伏、傾斜量、地形分類       | ✅ Sprint 1実装済     |
+| ⛰️ 地形分析   | 標高統計、傾斜区分、谷・崖・低地等の抽出   | 📝 設計済み           |
+| 📈 断面分析   | 任意線の標高断面、累積上昇・下降、最大傾斜 | 📝 設計済み           |
+| ⚠️ 確認支援   | 要確認・参考情報・判定不能の根拠付きカード | 📝 設計済み           |
+| 🧾 共有・出力 | 共有URL、Markdown、CSV、JSON               | 📝 設計済み           |
+| 🔎 品質表示   | 出典、取得日時、解像度、欠損率、加工方法   | 📝 設計済み           |
 
 ## 🚧 重要な利用上の制約
 
@@ -116,7 +116,7 @@ Sprint 0でmonorepo基盤・スケルトン実装・ゴールデンfixture・CI�
 pnpm install --frozen-lockfile   # 依存関係を導入
 pnpm lint                        # 静的検査
 pnpm typecheck                   # TypeScript strict検査 (tests/fixtures含む)
-pnpm test                        # 単体テスト (200件)
+pnpm test                        # 単体テスト (214件)
 pnpm build                       # 全ワークスペースをビルド
 pnpm format                      # コードスタイル検査
 ```
@@ -155,10 +155,10 @@ flowchart LR
 - ✅ 要件定義書 v1.0.0
 - ✅ 詳細設計仕様書 v1.0.0
 - ✅ README・docs初版
-- ✅ Sprint 0: monorepoスケルトン実装 (`apps/*`, `packages/*`) + ゴールデンfixture (当時121テスト、現在200テスト全パス)
+- ✅ Sprint 0: monorepoスケルトン実装 (`apps/*`, `packages/*`) + ゴールデンfixture (当時121テスト、現在214テスト全パス)
 - ✅ OpenAPI 3.1初版 (`openapi/openapi.yaml`)
 - ✅ CI (`.github/workflows/ci.yml`、Node 22。lint/format/typecheck/test/build/Workers bundle dry-run/E2E smoke/dependency audit。secret scan/SASTは未実装 → Issue #2)
-- 🚧 MVP機能実装 — Sprint 1で実装済み: MapLibre地図表示 (GSI標準/淡色/写真 + 傾斜量・陰影起伏の切替、帰属常設、表示状態の共有URLハッシュ)。Sprint 2で実装済み: 単点標高API `GET /elevation` (GSI DEMタイル取得→PNG復号→出典・品質付き応答、Web標準stream採用でWorkers/Node両対応)。未着手: 地図UIからの地点指定連携・地形分析・断面分析・確認支援・レポート出力 (Markdown/CSV/JSON)
+- 🚧 MVP機能実装 — Sprint 1で実装済み: MapLibre地図表示 (GSI標準/淡色/写真 + 傾斜量・陰影起伏の切替、帰属常設、表示状態の共有URLハッシュ)。Sprint 2で実装済み: 単点標高API `GET /elevation` (GSI DEMタイル取得→PNG復号→出典・品質付き応答、Web標準stream採用でWorkers/Node両対応) と、地図クリック→標高取得→パネル表示のUI連携 (欠損・判定不能に「安全を意味しない」を常記、out-of-order応答破棄)。未着手: 住所/緯度経度/現在地からの地点指定・地形分析・断面分析・確認支援・レポート出力 (Markdown/CSV/JSON)
 - ⬜ Preview / Staging環境
 - ⬜ UAT・セキュリティ確認
 

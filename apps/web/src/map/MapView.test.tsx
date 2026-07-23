@@ -13,8 +13,8 @@ const mocks = vi.hoisted(() => {
   class FakeMap {
     static instances: FakeMap[] = [];
     readonly options: Record<string, unknown>;
-    readonly handlers = new Map<string, Set<() => void>>();
-    readonly onceHandlers = new Map<string, Set<() => void>>();
+    readonly handlers = new Map<string, Set<(arg?: unknown) => void>>();
+    readonly onceHandlers = new Map<string, Set<(arg?: unknown) => void>>();
     readonly addControl = vi.fn();
     readonly remove = vi.fn();
     styleLoaded = false;
@@ -32,39 +32,42 @@ const mocks = vi.hoisted(() => {
       FakeMap.instances.push(this);
     }
 
-    on(event: string, handler: () => void): this {
+    on(event: string, handler: (arg?: unknown) => void): this {
       this.listeners(this.handlers, event).add(handler);
       return this;
     }
 
-    once(event: string, handler: () => void): this {
+    once(event: string, handler: (arg?: unknown) => void): this {
       this.listeners(this.onceHandlers, event).add(handler);
       return this;
     }
 
-    off(event: string, handler: () => void): this {
+    off(event: string, handler: (arg?: unknown) => void): this {
       this.handlers.get(event)?.delete(handler);
       this.onceHandlers.get(event)?.delete(handler);
       return this;
     }
 
-    fire(event: string): void {
+    fire(event: string, arg?: unknown): void {
       if (event === "load") {
         this.styleLoaded = true;
       }
       for (const handler of this.handlers.get(event) ?? []) {
-        handler();
+        handler(arg);
       }
       const once = this.onceHandlers.get(event);
       if (once !== undefined) {
         this.onceHandlers.delete(event);
         for (const handler of once) {
-          handler();
+          handler(arg);
         }
       }
     }
 
-    private listeners(store: Map<string, Set<() => void>>, event: string): Set<() => void> {
+    private listeners(
+      store: Map<string, Set<(arg?: unknown) => void>>,
+      event: string,
+    ): Set<(arg?: unknown) => void> {
       let set = store.get(event);
       if (set === undefined) {
         set = new Set();
@@ -204,6 +207,15 @@ describe("MapView", () => {
       base: "std",
       overlays: ["hillshade"],
     });
+  });
+
+  it("reports clicked coordinates through onMapClick (FR-001)", () => {
+    const onMapClick = vi.fn();
+    render(<MapView view={INITIAL_VIEW} onViewChange={vi.fn()} onMapClick={onMapClick} />);
+
+    mountedMap().fire("click", { lngLat: { lat: 35.68, lng: 139.76 } });
+
+    expect(onMapClick).toHaveBeenCalledWith({ lat: 35.68, lon: 139.76 });
   });
 
   it("removes the map on unmount", () => {

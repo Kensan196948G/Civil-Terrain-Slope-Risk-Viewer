@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
+import { ElevationPanel } from "./elevation/ElevationPanel";
+import type { ElevationPanelState } from "./elevation/ElevationPanel";
+import { fetchElevation } from "./elevation/elevation-client";
 import { LayerSwitcher } from "./map/LayerSwitcher";
 import { MapView } from "./map/MapView";
 import type { BaseLayerId, OverlayLayerId } from "./map/layers";
@@ -13,6 +16,9 @@ import "./app.css";
  */
 export function App(): ReactElement {
   const [view, setView] = useState<MapViewState>(() => parseMapState(window.location.hash));
+  const [elevation, setElevation] = useState<ElevationPanelState>({ phase: "idle" });
+  // Serial number guards against out-of-order responses when clicking quickly.
+  const requestSeq = useRef(0);
 
   useEffect(() => {
     // 共有URL: 表示状態 (非機密の視点とレイヤー選択のみ) をハッシュへ反映する。
@@ -35,6 +41,16 @@ export function App(): ReactElement {
     });
   }, []);
 
+  const handleMapClick = useCallback((coordinate: { lat: number; lon: number }) => {
+    const seq = ++requestSeq.current;
+    setElevation({ phase: "loading", coordinate });
+    void fetchElevation(coordinate).then((result) => {
+      if (requestSeq.current === seq) {
+        setElevation({ phase: "done", coordinate, result });
+      }
+    });
+  }, []);
+
   return (
     <div className="app">
       <header className="app-header">
@@ -48,9 +64,10 @@ export function App(): ReactElement {
             onBaseChange={handleBaseChange}
             onOverlayToggle={handleOverlayToggle}
           />
+          <ElevationPanel state={elevation} />
         </aside>
         <section className="app-map" aria-label="地図表示">
-          <MapView view={view} onViewChange={handleViewChange} />
+          <MapView view={view} onViewChange={handleViewChange} onMapClick={handleMapClick} />
         </section>
       </main>
     </div>
