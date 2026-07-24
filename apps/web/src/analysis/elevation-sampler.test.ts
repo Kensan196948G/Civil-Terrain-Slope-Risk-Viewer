@@ -44,6 +44,30 @@ describe("sampleElevation", () => {
     expect(outcome.failed).toBe(true); // 不在を断定できない (Unknown is not Safe)
   });
 
+  it("calls fetch without rebinding `this` (regression: browser 'Illegal invocation')", async () => {
+    // window.fetch は this が window/globalThis 以外だと TypeError を投げる。
+    // その挙動を再現したスタブで、プロパティ経由呼び出しの退行を検出する。
+    const tile = await uniformDemTile(80);
+    function strictFetch(
+      this: unknown,
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ): Promise<Response> {
+      if (this !== undefined && this !== globalThis) {
+        throw new TypeError("Illegal invocation");
+      }
+      void input;
+      void init;
+      return Promise.resolve(pngResponse(tile));
+    }
+    const store = new DemTileStore(strictFetch as typeof fetch);
+
+    const outcome = await sampleElevation(store, COORD);
+
+    expect(outcome.failed).toBe(false);
+    expect(outcome.elevationM).toBeCloseTo(80, 2);
+  });
+
   it("passes an abort signal so hung fetches eventually time out", async () => {
     let receivedInit: RequestInit | undefined;
     const store = new DemTileStore(((_: RequestInfo | URL, init?: RequestInit) => {
