@@ -291,6 +291,51 @@ describe("MapView", () => {
     );
   });
 
+  it("clears the marker when selectedPoint returns to null (リセット)", () => {
+    const { rerender } = render(<MapView view={INITIAL_VIEW} onViewChange={vi.fn()} />);
+    const map = mountedMap();
+    map.fire("load");
+
+    rerender(
+      <MapView view={INITIAL_VIEW} onViewChange={vi.fn()} selectedPoint={{ lat: 35, lon: 139 }} />,
+    );
+    rerender(<MapView view={INITIAL_VIEW} onViewChange={vi.fn()} selectedPoint={null} />);
+
+    const source = map.getSource("selected-point");
+    expect(source?.setData).toHaveBeenLastCalledWith({ type: "FeatureCollection", features: [] });
+  });
+
+  it("draws the section line once both endpoints exist", () => {
+    const { rerender } = render(<MapView view={INITIAL_VIEW} onViewChange={vi.fn()} />);
+    const map = mountedMap();
+    map.fire("load");
+
+    rerender(
+      <MapView
+        view={INITIAL_VIEW}
+        onViewChange={vi.fn()}
+        sectionLine={{ start: { lat: 35, lon: 139 }, end: null }}
+      />,
+    );
+    expect(map.addSource).toHaveBeenCalledWith(
+      "section-line",
+      expect.objectContaining({ type: "geojson" }),
+    );
+
+    rerender(
+      <MapView
+        view={INITIAL_VIEW}
+        onViewChange={vi.fn()}
+        sectionLine={{ start: { lat: 35, lon: 139 }, end: { lat: 35.01, lon: 139.01 } }}
+      />,
+    );
+    const source = map.getSource("section-line");
+    const lastData = source?.setData.mock.calls.at(-1)?.[0] as {
+      features: readonly { geometry: { type: string } }[];
+    };
+    expect(lastData.features.map((f) => f.geometry.type)).toEqual(["Point", "Point", "LineString"]);
+  });
+
   it("flies to a focus request (search)", () => {
     const { rerender } = render(<MapView view={INITIAL_VIEW} onViewChange={vi.fn()} />);
 
