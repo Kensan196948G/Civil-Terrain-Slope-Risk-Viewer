@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
+import { DemTileStore } from "./analysis/elevation-sampler";
+import { analyzeSection } from "./analysis/section-service";
+import { analyzeTerrain } from "./analysis/terrain-service";
 import { DemMetaCards } from "./elevation/DemMetaCards";
 import { ElevationPanel } from "./elevation/ElevationPanel";
 import type { ElevationPanelState } from "./elevation/ElevationPanel";
 import { fetchElevation } from "./elevation/elevation-client";
 import { LayerSwitcher } from "./map/LayerSwitcher";
 import { MapView } from "./map/MapView";
-import type { MapFocusRequest } from "./map/MapView";
+import type { MapFocusRequest, SectionLineState } from "./map/MapView";
 import { BASE_LAYERS, OVERLAY_LAYERS } from "./map/layers";
 import type { BaseLayerId, OverlayLayerId } from "./map/layers";
 import { parseMapState, serializeMapState } from "./map/map-state";
@@ -14,19 +17,24 @@ import type { MapViewState } from "./map/map-state";
 import { SiteSearch } from "./search/SiteSearch";
 import { parseSearchQuery } from "./search/site-search";
 import type { Coordinate } from "./search/site-search";
-import { AnalysisTab } from "./tabs/AnalysisTab";
 import { AppNav } from "./tabs/AppNav";
+import { ConfirmTab } from "./tabs/ConfirmTab";
 import { OutputTab } from "./tabs/OutputTab";
+import { SectionTab } from "./tabs/SectionTab";
+import type { SectionAnalysisState, SectionPickPhase } from "./tabs/SectionTab";
+import { TerrainTab } from "./tabs/TerrainTab";
+import type { TerrainState } from "./tabs/TerrainTab";
 import { TABS, findTab } from "./tabs/tabs";
 import type { TabId } from "./tabs/tabs";
 import "./app.css";
 
 /**
  * SCR-01 ホーム/地図 (要件 7章)。視覚デザインは Claude Design「Slope Risk
- * Viewer redesign」を正本とし、レイアウト・タブ・検索・マーカーまで反映する
- * (Issue #23)。ただしデザインのモック値 (地形分析の数値・所見・欠損率・架空
- * ユーザー等) は実装しない — 架空の値を示すことは「データなし ≠ 安全」という
- * 本製品の原則に反するため。未実装の分析タブは実座標と「準備中」を表示する。
+ * Viewer redesign」を正本とする (Issue #23)。
+ *
+ * 地形分析・断面分析・確認支援は DEM 実データからのクライアントサイド解析
+ * (analysis/)。デザインのモック値は使わず、欠損・失敗は判定不能として明示する
+ * (「データなし ≠ 安全」)。
  */
 
 /** 検索確定時のズーム (デザイン仕様)。 */
@@ -53,6 +61,10 @@ function demStatus(elevation: ElevationPanelState): { className: string; text: s
   return { className: "dem-pill", text: "DEM未取得" };
 }
 
+function sameCoordinate(a: Coordinate, b: Coordinate): boolean {
+  return a.lat === b.lat && a.lon === b.lon;
+}
+
 export function App(): ReactElement {
   const [view, setView] = useState<MapViewState>(() => parseMapState(window.location.hash));
   const [activeTab, setActiveTab] = useState<TabId>("map");
@@ -60,8 +72,23 @@ export function App(): ReactElement {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
   const [focus, setFocus] = useState<MapFocusRequest | null>(null);
-  // Serial number guards against out-of-order responses when clicking quickly.
+  const [terrain, setTerrain] = useState<TerrainState>({ phase: "idle" });
+  const [sectionPick, setSectionPick] = useState<SectionPickPhase>("idle");
+  const [sectionLine, setSectionLine] = useState<SectionLineState>({ start: null, end: null });
+  const [sectionAnalysis, setSectionAnalysis] = useState<SectionAnalysisState>({ phase: "idle" });
+  // Serial numbers guard against out-of-order async responses.
   const requestSeq = useRef(0);
+  const terrainSeq = useRef(0);
+  const sectionSeq = useRef(0);
+  /** 検索で視点を移す前のカメラ。リセット (戻る) の復元先。 */
+  const preSearchViewRef = useRef<{ lat: number; lon: number; zoom: number } | null>(null);
+  /** DEM タイルの共有キャッシュ (地形・断面で共用)。再試行時に作り直す。 */
+  const tileStoreRef = useRef<DemTileStore | null>(null);
+
+  const getTileStore = (): DemTileStore => {
+    tileStoreRef.current ??= new DemTileStore();
+    return tileStoreRef.current;
+  };
 
   useEffect(() => {
     // 共有URL: 表示状態 (非機密の視点とレイヤー選択のみ) をハッシュへ反映する。
@@ -84,7 +111,7 @@ export function App(): ReactElement {
     });
   }, []);
 
-  const handleMapClick = useCallback((coordinate: { lat: number; lon: number }) => {
+  const requestElevation = useCallback((coordinate: Coordinate) => {
     const seq = ++requestSeq.current;
     setElevation({ phase: "loading", coordinate });
     void fetchElevation(coordinate).then((result) => {
@@ -93,6 +120,49 @@ export function App(): ReactElement {
       }
     });
   }, []);
+
+  const runTerrain = useCallback((coordinate: Coordinate) => {
+    const seq = ++terrainSeq.current;
+    setTerrain({ phase: "running", coordinate });
+    void analyzeTerrain(coordinate, { store: getTileStore() }).then((result) => {
+      if (terrainSeq.current === seq) {
+        setTerrain({ phase: "done", coordinate, result });
+      }
+    });
+  }, []);
+
+  const runSection = useCallback((start: Coordinate, end: Coordinate) => {
+    const seq = ++sectionSeq.current;
+    setSectionAnalysis({ phase: "running" });
+    void analyzeSection(start, end, { store: getTileStore() }).then((result) => {
+      if (sectionSeq.current === seq) {
+        setSectionAnalysis({ phase: "done", result });
+      }
+    });
+  }, []);
+
+  const handleMapClick = useCallback(
+    (coordinate: Coordinate) => {
+      if (sectionPick === "await-start") {
+        setSectionLine({ start: coordinate, end: null });
+        setSectionAnalysis({ phase: "idle" });
+        setSectionPick("await-end");
+        return;
+      }
+      if (sectionPick === "await-end") {
+        const start = sectionLine.start;
+        setSectionLine({ start, end: coordinate });
+        setSectionPick("idle");
+        setActiveTab("cross-section");
+        if (start !== null) {
+          runSection(start, coordinate);
+        }
+        return;
+      }
+      requestElevation(coordinate);
+    },
+    [sectionPick, sectionLine.start, runSection, requestElevation],
+  );
 
   const handleSearchQueryChange = useCallback((query: string) => {
     setSearchQuery(query);
@@ -110,17 +180,85 @@ export function App(): ReactElement {
     }
     setSearchError(null);
     setActiveTab("map");
+    // 初回検索時のみ「戻る」用に現在の視点を控える (連続検索では最初の視点へ戻す)。
+    preSearchViewRef.current ??= { lat: view.lat, lon: view.lon, zoom: view.zoom };
     setFocus((current) => ({
       coordinate: resolution.coordinate,
       zoom: SEARCH_FOCUS_ZOOM,
       token: (current?.token ?? 0) + 1,
     }));
-    handleMapClick(resolution.coordinate);
-  }, [searchQuery, handleMapClick]);
+    requestElevation(resolution.coordinate);
+  }, [searchQuery, requestElevation, view.lat, view.lon, view.zoom]);
 
   const handleGoToMap = useCallback(() => {
     setActiveTab("map");
   }, []);
+
+  /** 検索・選択・解析・断面線をすべて解除し、検索前の視点へ戻す。 */
+  const handleReset = useCallback(() => {
+    requestSeq.current++;
+    terrainSeq.current++;
+    sectionSeq.current++;
+    setElevation({ phase: "idle" });
+    setTerrain({ phase: "idle" });
+    setSectionPick("idle");
+    setSectionLine({ start: null, end: null });
+    setSectionAnalysis({ phase: "idle" });
+    setSearchQuery("");
+    setSearchError(null);
+    const back = preSearchViewRef.current;
+    if (back !== null) {
+      preSearchViewRef.current = null;
+      setFocus((current) => ({
+        coordinate: { lat: back.lat, lon: back.lon },
+        zoom: back.zoom,
+        token: (current?.token ?? 0) + 1,
+      }));
+    }
+  }, []);
+
+  const handleStartPicking = useCallback(() => {
+    setSectionLine({ start: null, end: null });
+    setSectionAnalysis({ phase: "idle" });
+    setSectionPick("await-start");
+    setActiveTab("map");
+  }, []);
+
+  const handleCancelPicking = useCallback(() => {
+    setSectionPick("idle");
+    setActiveTab("cross-section");
+  }, []);
+
+  // 選択地点は標高取得状態から導出する (別 state にすると乖離バグの温床)。
+  const selectedPoint: Coordinate | null = elevation.phase === "idle" ? null : elevation.coordinate;
+
+  const handleTerrainRetry = useCallback(() => {
+    tileStoreRef.current = new DemTileStore(); // 失敗キャッシュを捨てて再試行
+    if (selectedPoint !== null) {
+      runTerrain(selectedPoint);
+    }
+  }, [selectedPoint, runTerrain]);
+
+  const handleSectionRetry = useCallback(() => {
+    tileStoreRef.current = new DemTileStore();
+    if (sectionLine.start !== null && sectionLine.end !== null) {
+      runSection(sectionLine.start, sectionLine.end);
+    }
+  }, [sectionLine.start, sectionLine.end, runSection]);
+
+  // 地形分析は地形/確認タブを開いたときに遅延実行し、地点ごとに1回だけ走らせる。
+  useEffect(() => {
+    if (selectedPoint === null) {
+      return;
+    }
+    if (activeTab !== "terrain" && activeTab !== "confirm") {
+      return;
+    }
+    if (terrain.phase !== "idle" && sameCoordinate(terrain.coordinate, selectedPoint)) {
+      return;
+    }
+    runTerrain(selectedPoint);
+  }, [activeTab, selectedPoint, terrain, runTerrain]);
 
   // 実状態から表示中レイヤーのラベルを引く (トップバー副題と地図カードのチップ)。
   const activeBaseLabel = BASE_LAYERS.find((layer) => layer.id === view.base)?.label ?? "";
@@ -131,10 +269,14 @@ export function App(): ReactElement {
 
   const activeTabDef = findTab(activeTab);
   const topbarSub = activeTab === "map" ? selectedLabels : activeTabDef.topbarSub;
-  // 選択地点は標高取得状態から導出する (別 state にすると乖離バグの温床)。
-  const selectedPoint: Coordinate | null = elevation.phase === "idle" ? null : elevation.coordinate;
   const dem = demStatus(elevation);
   const shareUrl = `${window.location.origin}${window.location.pathname}#${serializeMapState(view)}`;
+  const canReset =
+    selectedPoint !== null ||
+    searchQuery !== "" ||
+    searchError !== null ||
+    sectionLine.start !== null ||
+    sectionPick !== "idle";
 
   return (
     <div className="app">
@@ -204,6 +346,15 @@ export function App(): ReactElement {
             onQueryChange={handleSearchQueryChange}
             onSubmit={handleSearchSubmit}
           />
+          <button
+            type="button"
+            className="btn"
+            onClick={handleReset}
+            disabled={!canReset}
+            title="検索・選択・断面線を解除し、検索前の表示に戻します"
+          >
+            リセット
+          </button>
           <span className={dem.className}>
             <span className="dem-pill-dot" aria-hidden="true" />
             {dem.text}
@@ -221,6 +372,19 @@ export function App(): ReactElement {
           {/* 地図タブは unmount せず CSS で隠す: MapLibre の地図とタイル
               キャッシュを保つ (デザインの mapTabDisplay と同じ方針)。 */}
           <div className={`tab-panel${activeTab === "map" ? "" : " tab-panel--hidden"}`}>
+            {sectionPick !== "idle" ? (
+              <p className="pick-banner" role="status">
+                <span aria-hidden="true">📐</span>
+                <span>
+                  {sectionPick === "await-start"
+                    ? "断面の始点をクリックしてください"
+                    : "断面の終点をクリックしてください"}
+                </span>
+                <button type="button" className="btn btn--small" onClick={handleCancelPicking}>
+                  やめる
+                </button>
+              </p>
+            ) : null}
             <section className="app-map" aria-label="地図表示">
               <div className="map-card-header">
                 <div>
@@ -240,15 +404,37 @@ export function App(): ReactElement {
                 onViewChange={handleViewChange}
                 onMapClick={handleMapClick}
                 selectedPoint={selectedPoint}
+                sectionLine={sectionLine}
                 focus={focus}
               />
             </section>
             <DemMetaCards state={elevation} />
           </div>
-          {activeTab === "terrain" || activeTab === "cross-section" || activeTab === "confirm" ? (
-            <AnalysisTab
-              tab={activeTabDef}
+          {activeTab === "terrain" ? (
+            <TerrainTab
               selectedPoint={selectedPoint}
+              state={terrain}
+              onGoToMap={handleGoToMap}
+              onRetry={handleTerrainRetry}
+            />
+          ) : null}
+          {activeTab === "cross-section" ? (
+            <SectionTab
+              pick={sectionPick}
+              start={sectionLine.start}
+              end={sectionLine.end}
+              analysis={sectionAnalysis}
+              onStartPicking={handleStartPicking}
+              onCancelPicking={handleCancelPicking}
+              onRetry={handleSectionRetry}
+            />
+          ) : null}
+          {activeTab === "confirm" ? (
+            <ConfirmTab
+              selectedPoint={selectedPoint}
+              terrainRunning={terrain.phase === "running"}
+              terrain={terrain.phase === "done" ? terrain.result : null}
+              section={sectionAnalysis.phase === "done" ? sectionAnalysis.result : null}
               onGoToMap={handleGoToMap}
             />
           ) : null}
