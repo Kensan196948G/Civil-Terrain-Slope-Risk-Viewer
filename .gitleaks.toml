@@ -1,0 +1,27 @@
+# gitleaks 設定 — 既定ルールセットを継承しつつ、既知の安全な擬似値を allowlist する。
+# 現状の既定ルールでは下記テスト用ダミー接続文字列は検出されないが、将来ルールが
+# 追加されても CI が誤検知で赤にならないよう、防御的に明示除外する。
+# 実際の秘密情報は Worker Secret / Binding で管理し、リポジトリには置かない。
+
+title = "civil-terrain-slope-risk-viewer gitleaks config"
+
+[extend]
+# gitleaks の既定ルールをすべて有効化した上で、以下の allowlist を追加する。
+useDefault = true
+
+[allowlist]
+description = "テスト fixture 内の明らかにダミーな接続文字列・値を除外する"
+
+# 対象パス: テストとサンプル。プロダクションコードは除外しない。
+paths = [
+  '''.*\.test\.(ts|tsx)$''',
+  '''tests/.*''',
+  '''\.env\.example$''',
+]
+
+# 明らかに擬似の DSN パターン (user:pass@… / example.com / localhost)。
+regexes = [
+  '''postgres(ql)?://user:pass@''',
+  '''@(db\.)?example\.com''',
+  '''@hyperdrive/''',
+]
