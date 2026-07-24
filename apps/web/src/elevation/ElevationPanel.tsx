@@ -54,7 +54,9 @@ function renderBody(state: ElevationPanelState): ReactElement {
           <dd>{where}</dd>
           <dt>ソース / 品質</dt>
           <dd>
-            {result.point.source} (グレード {result.point.quality.grade})
+            <span className="elevation-source">
+              {result.point.source} (グレード {result.point.quality.grade})
+            </span>
           </dd>
           {provenance !== undefined && (
             <>
@@ -72,19 +74,23 @@ function renderBody(state: ElevationPanelState): ReactElement {
     }
     case "no-coverage":
       return (
-        <p>
+        <p className="elevation-note elevation-note--warn">
           ⚠️ この地点の標高データはありません ({where})。
           <strong>データが無いことは安全を意味しません。</strong>
         </p>
       );
     case "unavailable":
       return (
-        <p>
+        <p className="elevation-note elevation-note--unknown">
           ❔ データ取得に失敗し、判定不能です ({where})。
           時間をおいて再試行してください。判定不能は安全を意味しません。
         </p>
       );
     case "error":
-      return <p>❌ 通信エラーが発生しました ({result.message})。再試行してください。</p>;
+      return (
+        <p className="elevation-note elevation-note--error">
+          ❌ 通信エラーが発生しました ({result.message})。再試行してください。
+        </p>
+      );
   }
 }
