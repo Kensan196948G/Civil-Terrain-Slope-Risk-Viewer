@@ -10,6 +10,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@civil-terrain/adapters": "workspace:*",
+    "@civil-terrain/domain": "workspace:*",
+    "@civil-terrain/geo": "workspace:*",
     "@civil-terrain/ui": "workspace:*",
     "maplibre-gl": "^5.24.0",
     "react": "^18.3.1",

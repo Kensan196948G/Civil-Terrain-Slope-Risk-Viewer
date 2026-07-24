@@ -66,6 +66,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@civil-terrain/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@civil-terrain/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@civil-terrain/geo':
+        specifier: workspace:*
+        version: link:../../packages/geo
       '@civil-terrain/ui':
         specifier: workspace:*
         version: link:../../packages/ui

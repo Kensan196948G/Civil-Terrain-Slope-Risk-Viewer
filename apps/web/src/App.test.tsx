@@ -44,7 +44,25 @@ vi.mock("./elevation/elevation-client", () => ({
   fetchElevation: vi.fn(),
 }));
 
+// 解析サービスはネットワーク (GSIタイル) に出るため必ずモックする。
+// タブUIが参照する定数はモックにも実体を持たせる。
+vi.mock("./analysis/terrain-service", () => ({
+  analyzeTerrain: vi.fn(),
+  TERRAIN_CELL_M: 5,
+  TERRAIN_GRID_SIZE: 33,
+}));
+vi.mock("./analysis/section-service", () => ({
+  analyzeSection: vi.fn(),
+  MIN_SECTION_LENGTH_M: 30,
+  MAX_SECTION_LENGTH_M: 20000,
+}));
+
+import { analyzeTerrain } from "./analysis/terrain-service";
+import { analyzeSection } from "./analysis/section-service";
+
 const fetchElevationMock = vi.mocked(fetchElevation);
+const analyzeTerrainMock = vi.mocked(analyzeTerrain);
+const analyzeSectionMock = vi.mocked(analyzeSection);
 
 function okResult(elevationM: number): ElevationResult {
   return {
@@ -71,6 +89,10 @@ describe("App", () => {
     window.history.replaceState(null, "", "#");
     mocks.FakeMap.instances = [];
     fetchElevationMock.mockReset();
+    analyzeTerrainMock.mockReset();
+    analyzeTerrainMock.mockResolvedValue({ kind: "no-coverage" });
+    analyzeSectionMock.mockReset();
+    analyzeSectionMock.mockResolvedValue({ kind: "no-coverage" });
   });
 
   it("renders the application title as a heading", () => {
@@ -196,6 +218,77 @@ describe("App", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("該当する地点が見つかりませんでした");
     expect(fetchElevationMock).not.toHaveBeenCalled();
+  });
+
+  it("runs the terrain analysis with real DEM data when the tab opens (地形分析)", async () => {
+    fetchElevationMock.mockResolvedValue(okResult(100));
+    analyzeTerrainMock.mockResolvedValue({ kind: "no-coverage" });
+    render(<App />);
+    const map = mocks.FakeMap.instances[0];
+
+    await act(async () => {
+      map?.fire("click", { lngLat: { lat: 35.1, lng: 138.1 } });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "地形分析" }));
+
+    expect(analyzeTerrainMock).toHaveBeenCalledWith({ lat: 35.1, lon: 138.1 }, expect.anything());
+    expect(await screen.findByText(/この範囲の DEM データはありません/)).toBeInTheDocument();
+    // 欠損時も「安全ではない」注意が必ず付く。
+    expect(screen.getByText(/データが無いことは安全を意味しません/)).toBeInTheDocument();
+  });
+
+  it("picks a section line on the map and runs the section analysis (断面分析)", async () => {
+    analyzeSectionMock.mockResolvedValue({ kind: "no-coverage" });
+    render(<App />);
+    const map = mocks.FakeMap.instances[0];
+
+    fireEvent.click(screen.getByRole("button", { name: "断面分析" }));
+    expect(screen.getByText("断面線が未指定です")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "地図で断面線を指定" }));
+    // 地図タブへ切り替わり、始点の案内が出る。
+    expect(screen.getByText("断面の始点をクリックしてください")).toBeInTheDocument();
+
+    await act(async () => {
+      map?.fire("click", { lngLat: { lat: 35.0, lng: 138.0 } });
+    });
+    expect(screen.getByText("断面の終点をクリックしてください")).toBeInTheDocument();
+
+    await act(async () => {
+      map?.fire("click", { lngLat: { lat: 35.01, lng: 138.01 } });
+    });
+
+    // 断面タブへ自動遷移し、指定した2点で解析が走る。標高取得は走らない。
+    expect(analyzeSectionMock).toHaveBeenCalledWith(
+      { lat: 35.0, lon: 138.0 },
+      { lat: 35.01, lon: 138.01 },
+      expect.anything(),
+    );
+    expect(fetchElevationMock).not.toHaveBeenCalled();
+    expect(await screen.findByText(/この断面の DEM データはありません/)).toBeInTheDocument();
+  });
+
+  it("リセット clears the selection and flies back to the pre-search view", async () => {
+    fetchElevationMock.mockResolvedValue(okResult(555));
+    render(<App />);
+
+    fireEvent.change(screen.getByRole("textbox", { name: "地点検索" }), {
+      target: { value: "富士山" },
+    });
+    fireEvent.submit(screen.getByRole("search"));
+    expect(await screen.findByText("555.00 m")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "リセット" }));
+
+    expect(screen.getByRole("region", { name: "地点標高" })).toHaveTextContent(
+      "地図をクリックすると",
+    );
+    expect(screen.getByRole("textbox", { name: "地点検索" })).toHaveValue("");
+    const map = mocks.FakeMap.instances[0];
+    // 検索前 (初期) の視点へ戻る。
+    expect(map?.flyTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ center: [138.0, 36.5], zoom: 5 }),
+    );
   });
 
   it("shows the real share URL on the output tab", () => {

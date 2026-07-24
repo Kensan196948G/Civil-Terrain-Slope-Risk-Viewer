@@ -14,25 +14,69 @@ export interface MapFocusRequest {
   readonly token: number;
 }
 
+/** 断面線の指定状態。start / end が揃うまでは端点のみ描画する。 */
+export interface SectionLineState {
+  readonly start: { readonly lat: number; readonly lon: number } | null;
+  readonly end: { readonly lat: number; readonly lon: number } | null;
+}
+
 export interface MapViewProps {
   readonly view: MapViewState;
   /** 利用者の地図操作 (パン・ズーム) 後に呼ばれる。視点の真実は地図側にある。 */
   readonly onViewChange: (view: MapViewState) => void;
   /** 地図クリック時の座標通知 (FR-001 地図クリックによる地点指定)。 */
   readonly onMapClick?: (coordinate: { lat: number; lon: number }) => void;
-  /** 選択中の地点。地図上に赤丸マーカーで示す。null なら未選択。 */
+  /** 選択中の地点。地図上に赤丸マーカーで示す。null なら未選択 (マーカー消去)。 */
   readonly selectedPoint?: { readonly lat: number; readonly lon: number } | null;
+  /** 断面分析の指定線。null なら非表示。 */
+  readonly sectionLine?: SectionLineState | null;
   /** 視点移動の要求 (検索確定時)。null なら移動しない。 */
   readonly focus?: MapFocusRequest | null;
 }
 
 const SELECTED_POINT_SOURCE = "selected-point";
 const SELECTED_POINT_LAYER = "selected-point-circle";
+const SECTION_SOURCE = "section-line";
+const SECTION_STROKE_LAYER = "section-line-stroke";
+const SECTION_POINT_LAYER = "section-line-points";
 
-function selectedPointData(coordinate: {
-  readonly lat: number;
-  readonly lon: number;
-}): GeoJSONSourceSpecification["data"] {
+type GeoJsonData = GeoJSONSourceSpecification["data"];
+type FeatureCollectionData = Extract<GeoJsonData, { type: "FeatureCollection" }>;
+type FeatureItem = FeatureCollectionData["features"][number];
+type LayerSpec = Parameters<maplibregl.Map["addLayer"]>[0];
+
+const EMPTY_COLLECTION: GeoJsonData = { type: "FeatureCollection", features: [] };
+
+/**
+ * GeoJSON ソースの upsert。ソース未作成かつ空データなら何もしない
+ * (クリア要求のためだけにソースを作らない)。
+ */
+function upsertGeoJson(
+  map: maplibregl.Map,
+  sourceId: string,
+  data: GeoJsonData,
+  layers: readonly LayerSpec[],
+): void {
+  const source = map.getSource(sourceId) as GeoJSONSource | undefined;
+  if (source !== undefined) {
+    source.setData(data);
+    return;
+  }
+  if (data === EMPTY_COLLECTION) {
+    return;
+  }
+  map.addSource(sourceId, { type: "geojson", data });
+  for (const layer of layers) {
+    map.addLayer(layer);
+  }
+}
+
+function selectedPointData(
+  coordinate: { readonly lat: number; readonly lon: number } | null,
+): GeoJsonData {
+  if (coordinate === null) {
+    return EMPTY_COLLECTION;
+  }
   return {
     type: "Feature",
     geometry: { type: "Point", coordinates: [coordinate.lon, coordinate.lat] },
@@ -40,29 +84,79 @@ function selectedPointData(coordinate: {
   };
 }
 
-/** 選択地点マーカーの upsert。色はデザイントークン --red-2 (#D6443B)。 */
+/** 選択地点マーカー。色はデザイントークン --red-2 (#D6443B)。 */
 function applySelectedPoint(
   map: maplibregl.Map,
-  coordinate: { readonly lat: number; readonly lon: number },
+  coordinate: { readonly lat: number; readonly lon: number } | null,
 ): void {
-  const data = selectedPointData(coordinate);
-  const source = map.getSource(SELECTED_POINT_SOURCE) as GeoJSONSource | undefined;
-  if (source !== undefined) {
-    source.setData(data);
-    return;
-  }
-  map.addSource(SELECTED_POINT_SOURCE, { type: "geojson", data });
-  map.addLayer({
-    id: SELECTED_POINT_LAYER,
-    type: "circle",
-    source: SELECTED_POINT_SOURCE,
-    paint: {
-      "circle-radius": 7,
-      "circle-color": "#d6443b",
-      "circle-stroke-color": "#ffffff",
-      "circle-stroke-width": 2,
+  upsertGeoJson(map, SELECTED_POINT_SOURCE, selectedPointData(coordinate), [
+    {
+      id: SELECTED_POINT_LAYER,
+      type: "circle",
+      source: SELECTED_POINT_SOURCE,
+      paint: {
+        "circle-radius": 7,
+        "circle-color": "#d6443b",
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 2,
+      },
     },
-  });
+  ]);
+}
+
+function sectionLineData(line: SectionLineState | null): GeoJsonData {
+  if (line === null || (line.start === null && line.end === null)) {
+    return EMPTY_COLLECTION;
+  }
+  const features: FeatureItem[] = [];
+  for (const point of [line.start, line.end]) {
+    if (point !== null) {
+      features.push({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [point.lon, point.lat] },
+        properties: {},
+      });
+    }
+  }
+  if (line.start !== null && line.end !== null) {
+    features.push({
+      type: "Feature",
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [line.start.lon, line.start.lat],
+          [line.end.lon, line.end.lat],
+        ],
+      },
+      properties: {},
+    });
+  }
+  return { type: "FeatureCollection", features };
+}
+
+/** 断面線。色はデザイントークン --accent (#E08A2B)。 */
+function applySectionLine(map: maplibregl.Map, line: SectionLineState | null): void {
+  upsertGeoJson(map, SECTION_SOURCE, sectionLineData(line), [
+    {
+      id: SECTION_STROKE_LAYER,
+      type: "line",
+      source: SECTION_SOURCE,
+      filter: ["==", "$type", "LineString"],
+      paint: { "line-color": "#e08a2b", "line-width": 3 },
+    },
+    {
+      id: SECTION_POINT_LAYER,
+      type: "circle",
+      source: SECTION_SOURCE,
+      filter: ["==", "$type", "Point"],
+      paint: {
+        "circle-radius": 6,
+        "circle-color": "#e08a2b",
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 2,
+      },
+    },
+  ]);
 }
 
 /**
@@ -80,6 +174,7 @@ export function MapView({
   onViewChange,
   onMapClick,
   selectedPoint,
+  sectionLine,
   focus,
 }: MapViewProps): ReactElement {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -154,11 +249,11 @@ export function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map === null || selectedPoint == null) {
+    if (map === null) {
       return;
     }
     const apply = (): void => {
-      applySelectedPoint(map, selectedPoint);
+      applySelectedPoint(map, selectedPoint ?? null);
     };
     // Same deferred-load guard as the layer effect: addSource/addLayer also
     // require the style to be loaded.
@@ -171,6 +266,24 @@ export function MapView({
       map.off("load", apply);
     };
   }, [selectedPoint]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map === null) {
+      return;
+    }
+    const apply = (): void => {
+      applySectionLine(map, sectionLine ?? null);
+    };
+    if (map.isStyleLoaded()) {
+      apply();
+      return;
+    }
+    map.once("load", apply);
+    return () => {
+      map.off("load", apply);
+    };
+  }, [sectionLine]);
 
   useEffect(() => {
     const map = mapRef.current;
