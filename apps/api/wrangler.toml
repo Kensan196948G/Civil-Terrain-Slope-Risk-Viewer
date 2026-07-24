@@ -9,6 +9,13 @@ compatibility_date = "2025-11-01"
 [observability]
 enabled = true
 
+# Production custom domain (ユーザー指定 2026-07-24: mirai-dx-platform.com /
+# terrain-slope)。Workers Custom Domains が deploy 時に DNS レコードと証明書を
+# 自動管理する。workers.dev URL も併存する。
+routes = [
+  { pattern = "terrain-slope.mirai-dx-platform.com", custom_domain = true }
+]
+
 # Static Assets: this single Worker serves both the SPA and the API on one
 # origin (no CORS, no separate Pages project). `directory` is resolved relative
 # to this file, so ../web/dist is apps/web/dist (built by `vite build`).
