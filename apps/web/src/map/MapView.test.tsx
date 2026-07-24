@@ -26,6 +26,22 @@ const mocks = vi.hoisted(() => {
     });
     getCenter = vi.fn((): { lat: number; lng: number } => ({ lat: 40.0, lng: 141.0 }));
     getZoom = vi.fn((): number => 9);
+    readonly flyTo = vi.fn();
+    readonly sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>();
+    readonly addSource = vi.fn((id: string): void => {
+      if (!this.styleLoaded) {
+        throw new Error("Style is not done loading.");
+      }
+      this.sources.set(id, { setData: vi.fn() });
+    });
+    readonly addLayer = vi.fn((): void => {
+      if (!this.styleLoaded) {
+        throw new Error("Style is not done loading.");
+      }
+    });
+    getSource(id: string): { setData: ReturnType<typeof vi.fn> } | undefined {
+      return this.sources.get(id);
+    }
 
     constructor(options: Record<string, unknown>) {
       this.options = options;
@@ -222,5 +238,74 @@ describe("MapView", () => {
     const { unmount } = render(<MapView view={INITIAL_VIEW} onViewChange={vi.fn()} />);
     unmount();
     expect(mountedMap().remove).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds the selected-point marker once the style is loaded", () => {
+    const { rerender } = render(<MapView view={INITIAL_VIEW} onViewChange={vi.fn()} />);
+    const map = mountedMap();
+    map.fire("load");
+
+    rerender(
+      <MapView view={INITIAL_VIEW} onViewChange={vi.fn()} selectedPoint={{ lat: 35, lon: 139 }} />,
+    );
+
+    expect(map.addSource).toHaveBeenCalledWith(
+      "selected-point",
+      expect.objectContaining({ type: "geojson" }),
+    );
+    expect(map.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "selected-point-circle", type: "circle" }),
+    );
+  });
+
+  it("defers the marker until the style loads (regression: 'Style is not done loading.')", () => {
+    render(
+      <MapView view={INITIAL_VIEW} onViewChange={vi.fn()} selectedPoint={{ lat: 35, lon: 139 }} />,
+    );
+    const map = mountedMap();
+
+    expect(map.addSource).not.toHaveBeenCalled();
+
+    map.fire("load");
+    expect(map.addSource).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates the existing marker source on subsequent selections", () => {
+    const { rerender } = render(<MapView view={INITIAL_VIEW} onViewChange={vi.fn()} />);
+    const map = mountedMap();
+    map.fire("load");
+
+    rerender(
+      <MapView view={INITIAL_VIEW} onViewChange={vi.fn()} selectedPoint={{ lat: 35, lon: 139 }} />,
+    );
+    rerender(
+      <MapView view={INITIAL_VIEW} onViewChange={vi.fn()} selectedPoint={{ lat: 36, lon: 140 }} />,
+    );
+
+    expect(map.addSource).toHaveBeenCalledTimes(1);
+    const source = map.getSource("selected-point");
+    expect(source?.setData).toHaveBeenCalledWith(
+      expect.objectContaining({
+        geometry: { type: "Point", coordinates: [140, 36] },
+      }),
+    );
+  });
+
+  it("flies to a focus request (search)", () => {
+    const { rerender } = render(<MapView view={INITIAL_VIEW} onViewChange={vi.fn()} />);
+
+    rerender(
+      <MapView
+        view={INITIAL_VIEW}
+        onViewChange={vi.fn()}
+        focus={{ coordinate: { lat: 35.36, lon: 138.72 }, zoom: 11, token: 1 }}
+      />,
+    );
+
+    expect(mountedMap().flyTo).toHaveBeenCalledWith({
+      center: [138.72, 35.36],
+      zoom: 11,
+      duration: 800,
+    });
   });
 });
