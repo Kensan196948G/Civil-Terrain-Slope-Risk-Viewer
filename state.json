@@ -5,9 +5,9 @@
     "release_deadline": "2027-01-17",
     "phase_mode": "development"
   },
-  "goal": "Phase 1「リリース直前」→ Phase 2「本番リリース」→ Phase 3「安定化」を一Goalとして遂行。PR #18 (Sprint 2 UI連携) はd039c6eでmerge済。現在はデプロイブロッカー解除 (item1: 統合Worker+Assets配線)、Issue #19監査是正 (item2)、E2E拡充+残MVPロードマップ (item3) をproduction-safeにし各PRのマージ判定Y/Nを提示。",
-  "phase": "Development",
-  "resume_point": "item1 (デプロイ配線): ブランチchore/deploy-wiring (origin/main d039c6eから分岐) で統合Worker+Static Assets構成を配線。apps/api/wrangler.tomlへ[assets] (directory=../web/dist, run_worker_first=[\"/api/*\"], not_found_handling=single-page-application) 追加、root/apps deployスクリプト追加、.env.example更新、docs/デプロイとリリース.md全面改訂。現行MVP (地図+/elevation) はDB非依存のためCloudflare Workerのみ・Neon/secret不要でデプロイ可能。ローカル検証全green (frozen install/web build/wrangler dry-run[assets]/lint/format/typecheck/test 214/build)、e2eは当環境headless Chrome起動不可のためCI委譲。次: commit→push→main宛PR (§17 provisioning節: Cloudflareアカウント一意特定・secret不要・rollback=wrangler rollback・Neon延期Sprint 3+・mergeは自動デプロイしない=人間手動) →マージ判定Y/N。item2=Issue #19監査是正 (独立PR)、item3=E2E click→panel smoke + 残MVPロードマップ。未コミットのCLAUDE.md/START_PROMPT.mdはユーザー作業のため保護 (本作業では触れない)。",
+  "goal": "Phase 1「リリース直前」→ Phase 2「本番リリース」→ Phase 3「安定化」を一Goalとして遂行。Sprint 2 UI連携 (PR #18)、デプロイ配線 (PR #20 item1)、Issue #19監査是正 (PR #21 item2)、E2E拡充 (PR #22 item3)、Claude Design再設計 (PR #24 Issue #23) はすべてmerge済でmain CI green。現在はIssue #2 (CI secret scan/SAST) をproduction-safe hardeningとしてPR化しマージ判定Y/Nを提示。Phase 2本番デプロイはCloudflare provisioning + `pnpm deploy`が人間決裁・人間実行のため、Y後も人間操作が必要。",
+  "phase": "Verify",
+  "resume_point": "Issue #2 (CI secret scan/SAST): ブランチchore/ci-secret-scan-sast-2 (origin/main cce0c4cから分岐)。.github/workflows/security.yml (gitleaks 8.30.1 + semgrep 1.171.0、検出時exit1、GHAS非依存)、.gitleaks.toml (default継承+テストfixture allowlist)、SECURITY.md、README/docs/セキュリティ.md更新をcommit (23ac7da)。ローカル検証: gitleaks 0 leaks (35 commits)、semgrep 0 findings (127 files)、lint/format/typecheck/test 214/build/wrangler dry-run 全green。private repoのためCodeQL/native secret scanning=GHAS課金対象は未有効 (人間決裁)。次: push→Draft PR→CI確認→マージ判定Y/N。Phase 2: 本番デプロイはCloudflare account/project/domain一意特定 + `pnpm deploy`が人間実行、Neon/secretはMVP不要 (Sprint 3+延期)、rollback=wrangler rollback。未コミットのCLAUDE.md/START_PROMPT.mdはユーザー作業のため保護 (本作業では触れない)。",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
