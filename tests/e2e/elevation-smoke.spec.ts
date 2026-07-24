@@ -101,5 +101,12 @@ test("クリック→データなし: 欠損は安全を意味しない旨を表
     panel.getByText("データが無いことは安全を意味しません", { exact: false }),
   ).toBeVisible();
 
-  expect(errors).toEqual([]);
+  // 404 応答自体はブラウザが "Failed to load resource … 404" を console へ出す
+  // (本番の no-coverage 経路でも必ず起きる期待された副作用)。これは良性として
+  // 除外し、アプリ由来のエラー (pageerror・想定外の console.error) が 0 件である
+  // ことのみを検証する。
+  const appErrors = errors.filter(
+    (message) => !/Failed to load resource:.*status of 404/.test(message),
+  );
+  expect(appErrors).toEqual([]);
 });
