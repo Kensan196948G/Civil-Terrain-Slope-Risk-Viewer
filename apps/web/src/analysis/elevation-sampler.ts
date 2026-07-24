@@ -31,6 +31,9 @@ type TileState =
   | { readonly kind: "absent" }
   | { readonly kind: "failed" };
 
+/** GSI 応答が滞留しても解析全体が固まらないためのタイル取得上限。 */
+const TILE_FETCH_TIMEOUT_MS = 15000;
+
 export class DemTileStore {
   private readonly tiles = new Map<string, Promise<TileState>>();
   private readonly fetchImpl: typeof fetch;
@@ -53,7 +56,10 @@ export class DemTileStore {
   private async load(url: string): Promise<TileState> {
     let response: Response;
     try {
-      response = await this.fetchImpl(url);
+      // タイムアウト (abort) は fetch 失敗と同じ「不在を断定できない」扱い。
+      response = await this.fetchImpl(url, {
+        signal: AbortSignal.timeout(TILE_FETCH_TIMEOUT_MS),
+      });
     } catch {
       return { kind: "failed" };
     }

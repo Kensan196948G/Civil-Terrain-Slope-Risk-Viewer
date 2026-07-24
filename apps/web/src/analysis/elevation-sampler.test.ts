@@ -44,6 +44,18 @@ describe("sampleElevation", () => {
     expect(outcome.failed).toBe(true); // 不在を断定できない (Unknown is not Safe)
   });
 
+  it("passes an abort signal so hung fetches eventually time out", async () => {
+    let receivedInit: RequestInit | undefined;
+    const store = new DemTileStore(((_: RequestInfo | URL, init?: RequestInit) => {
+      receivedInit = init;
+      return Promise.resolve(new Response(null, { status: 404 }));
+    }) as typeof fetch);
+
+    await sampleElevation(store, COORD);
+
+    expect(receivedInit?.signal).toBeInstanceOf(AbortSignal);
+  });
+
   it("caches tiles so repeated samples do not refetch", async () => {
     const tile = await uniformDemTile(50);
     let fetchCount = 0;
