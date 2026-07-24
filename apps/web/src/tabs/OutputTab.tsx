@@ -13,21 +13,37 @@ export interface OutputTabProps {
  * 共有URLは表示状態 (視点・レイヤー選択) だけを含み、住所・履歴・自由記述の
  * ような機密になり得る情報は含まない — デザインの注記をそのまま保証する。
  */
+type CopyState = "idle" | "copied" | "failed";
+
+const COPY_LABELS: Record<CopyState, string> = {
+  idle: "コピー",
+  copied: "コピー済み",
+  failed: "コピー失敗",
+};
+
 export function OutputTab({ shareUrl }: OutputTabProps): ReactElement {
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<CopyState>("idle");
 
   useEffect(() => {
-    if (!copied) {
+    if (copyState === "idle") {
       return;
     }
-    const timer = setTimeout(() => setCopied(false), 2000);
+    const timer = setTimeout(() => setCopyState("idle"), 2000);
     return () => clearTimeout(timer);
-  }, [copied]);
+  }, [copyState]);
 
   const handleCopy = (): void => {
-    // clipboard API が無い環境 (非セキュアコンテキスト等) では黙って失敗させず
-    // ボタン状態を変えない — 「コピー済み」の誤表示をしない。
-    void navigator.clipboard?.writeText(shareUrl).then(() => setCopied(true));
+    // clipboard API が無い環境 (非セキュアコンテキスト等) や権限拒否では
+    // 「コピー失敗」を明示する — 成功の誤表示も unhandled rejection もさせない。
+    const clipboard = navigator.clipboard;
+    if (clipboard === undefined) {
+      setCopyState("failed");
+      return;
+    }
+    void clipboard.writeText(shareUrl).then(
+      () => setCopyState("copied"),
+      () => setCopyState("failed"),
+    );
   };
 
   return (
@@ -59,7 +75,7 @@ export function OutputTab({ shareUrl }: OutputTabProps): ReactElement {
             onFocus={(event) => event.currentTarget.select()}
           />
           <button type="button" className="btn" onClick={handleCopy}>
-            {copied ? "コピー済み" : "コピー"}
+            {COPY_LABELS[copyState]}
           </button>
         </div>
         <p className="output-note">住所・現在地履歴・自由記述は含まれません。</p>

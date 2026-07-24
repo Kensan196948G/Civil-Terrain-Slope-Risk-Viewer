@@ -32,4 +32,23 @@ describe("OutputTab", () => {
     expect(writeText).toHaveBeenCalledWith(SHARE_URL);
     expect(await screen.findByRole("button", { name: "コピー済み" })).toBeInTheDocument();
   });
+
+  it("shows a failure state when the clipboard write is rejected", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("denied"));
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+
+    render(<OutputTab shareUrl={SHARE_URL} />);
+    fireEvent.click(screen.getByRole("button", { name: "コピー" }));
+
+    expect(await screen.findByRole("button", { name: "コピー失敗" })).toBeInTheDocument();
+  });
+
+  it("shows a failure state when the clipboard API is unavailable", () => {
+    vi.stubGlobal("navigator", { ...navigator, clipboard: undefined });
+
+    render(<OutputTab shareUrl={SHARE_URL} />);
+    fireEvent.click(screen.getByRole("button", { name: "コピー" }));
+
+    expect(screen.getByRole("button", { name: "コピー失敗" })).toBeInTheDocument();
+  });
 });

@@ -545,7 +545,7 @@ body {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
   opacity: 0.55;
 }
 
