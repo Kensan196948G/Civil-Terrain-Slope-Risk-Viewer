@@ -22,15 +22,15 @@ flowchart LR
 
 ## ✨ MVP機能
 
-| 領域          | 計画機能                                   | 状態                  |
-| ------------- | ------------------------------------------ | --------------------- |
-| 📍 地点指定   | 住所、緯度経度、地図クリック、現在地       | 🚧 地図クリック実装済 |
-| 🗺️ 地図       | 標準地図、陰影起伏、傾斜量、地形分類       | ✅ Sprint 1実装済     |
-| ⛰️ 地形分析   | 標高統計、傾斜区分、谷・崖・低地等の抽出   | 📝 設計済み           |
-| 📈 断面分析   | 任意線の標高断面、累積上昇・下降、最大傾斜 | 📝 設計済み           |
-| ⚠️ 確認支援   | 要確認・参考情報・判定不能の根拠付きカード | 📝 設計済み           |
-| 🧾 共有・出力 | 共有URL、Markdown、CSV、JSON               | 📝 設計済み           |
-| 🔎 品質表示   | 出典、取得日時、解像度、欠損率、加工方法   | 📝 設計済み           |
+| 領域          | 計画機能                                   | 状態                                          |
+| ------------- | ------------------------------------------ | --------------------------------------------- |
+| 📍 地点指定   | 住所、緯度経度、地図クリック、現在地       | ✅ 検索(地名/座標)・クリック済 (現在地未対応) |
+| 🗺️ 地図       | 標準地図、陰影起伏、傾斜量、地形分類       | ✅ Sprint 1実装済                             |
+| ⛰️ 地形分析   | 標高統計、傾斜区分、谷・崖・低地等の抽出   | ✅ v0.2.0実装済 (Horn傾斜統計+TPI分類)        |
+| 📈 断面分析   | 任意線の標高断面、累積上昇・下降、最大傾斜 | ✅ v0.2.0実装済 (2点指定・欠損は非補間)       |
+| ⚠️ 確認支援   | 要確認・参考情報・判定不能の根拠付きカード | ✅ v0.2.0実装済 (実測メトリクスのルール評価)  |
+| 🧾 共有・出力 | 共有URL、Markdown、CSV、JSON               | 🚧 共有URL実装済 / レポート出力は準備中       |
+| 🔎 品質表示   | 出典、取得日時、解像度、欠損率、加工方法   | ✅ v0.2.0実装済 (グレード・欠損率・出典)      |
 
 ## 🚧 重要な利用上の制約
 
@@ -149,19 +149,20 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    R["✅ 要件定義"] --> D["✅ 詳細設計"] --> S0["✅ Sprint 0 基盤"] --> MVP["⬜ MVP実装"] --> UAT["⬜ UAT"]
+    R["✅ 要件定義"] --> D["✅ 詳細設計"] --> S0["✅ Sprint 0 基盤"] --> MVP["✅ MVP実装"] --> REL["✅ v0.2.0 本番公開"] --> UAT["⬜ UAT"]
 ```
 
-- ✅ 要件定義書 v1.0.0
-- ✅ 詳細設計仕様書 v1.0.0
-- ✅ README・docs初版
-- ✅ Sprint 0: monorepoスケルトン実装 (`apps/*`, `packages/*`) + ゴールデンfixture (当時121テスト、現在214テスト全パス)
-- ✅ OpenAPI 3.1初版 (`openapi/openapi.yaml`)
+- 🚀 **本番稼働中 (v0.2.0)**: <https://terrain-slope.mirai-dx-platform.com> — 統合Cloudflare Worker (SPA + API 単一オリジン)。カスタムドメイン割当済み (PR #30/#31。workers.dev URL は無効化し正規URLへ一本化)
+- ✅ 要件定義書 v1.0.0 / 詳細設計仕様書 v1.0.0 / OpenAPI 3.1初版 (`openapi/openapi.yaml`)
+- ✅ Sprint 0: monorepoスケルトン (`apps/*`, `packages/*`) + ゴールデンfixture (現在291テスト全パス)
 - ✅ CI (`.github/workflows/ci.yml`、Node 22。lint/format/typecheck/test/build/Workers bundle dry-run/E2E smoke/dependency audit)
-- ✅ セキュリティCI (`.github/workflows/security.yml`。secret scan=gitleaks・SAST=semgrep をPR/mainで強制、検出時はジョブ失敗。private repoのためGHAS非依存のOSSで構成 → Issue #2)
-- 🚧 MVP機能実装 — Sprint 1で実装済み: MapLibre地図表示 (GSI標準/淡色/写真 + 傾斜量・陰影起伏の切替、帰属常設、表示状態の共有URLハッシュ)。Sprint 2で実装済み: 単点標高API `GET /elevation` (GSI DEMタイル取得→PNG復号→出典・品質付き応答、Web標準stream採用でWorkers/Node両対応) と、地図クリック→標高取得→パネル表示のUI連携 (欠損・判定不能に「安全を意味しない」を常記、out-of-order応答破棄)。未着手: 住所/緯度経度/現在地からの地点指定・地形分析・断面分析・確認支援・レポート出力 (Markdown/CSV/JSON)
-- ⬜ Preview / Staging環境
-- ⬜ UAT・セキュリティ確認
+- ✅ セキュリティCI (`.github/workflows/security.yml`。secret scan=gitleaks・SAST=semgrep をPR/mainで強制 → Issue #2)
+- ✅ 地図表示 (Sprint 1): MapLibre + GSI 標準/淡色/写真 + 傾斜量・陰影起伏、帰属常設、共有URLハッシュ
+- ✅ 単点標高 (Sprint 2): `GET /api/v1/elevation` (GSI DEMタイル→PNG復号→出典・品質付き応答) + クリック→標高パネル (欠損・判定不能に「安全を意味しない」を常記)
+- ✅ 再設計100%適用 (PR #27): 5タブUI・地点検索 (地名/緯度経度)・選択地点マーカー・DEM状態表示・出力タブ
+- ✅ 分析3タブ本番実装 (PR #28): 地形分析 (Horn傾斜統計 30°=急傾斜地法基準 + TPI地形分類)・断面分析 (2点指定→縦断プロファイル、欠損非補間)・確認支援 (実測メトリクスのルール評価)。GSI DEM実データのクライアントサイド解析、検索リセット付き
+- 🚧 既知の制約: `GET /api/v1/health/ready` は503 (Neon未接続の正直な報告。DB利用機能はSprint 3+)。レポート出力 (Markdown/CSV/JSON) は準備中
+- ⬜ UAT・Neon接続 (Sprint 3+)・レポート出力・分析タブE2E拡充
 
 ## 🤝 コントリビューション
 
