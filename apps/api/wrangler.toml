@@ -2,6 +2,15 @@ name = "civil-terrain-api"
 main = "src/index.ts"
 compatibility_date = "2025-11-01"
 
+# Production custom domain (ユーザー指定 2026-07-24: mirai-dx-platform.com /
+# terrain-slope)。Workers Custom Domains が deploy 時に DNS レコードと証明書を
+# 自動管理する。workers.dev URL も併存する。
+# NOTE: routes はトップレベルキー。[section] ヘッダーの後に置くとその
+# セクションの子として解釈され無視される (TOML仕様)。
+routes = [
+  { pattern = "terrain-slope.mirai-dx-platform.com", custom_domain = true }
+]
+
 # Local dev: `pnpm --filter @civil-terrain/api dev` (wrangler dev, port 8787).
 # Deploy: `pnpm deploy` (root) builds the SPA then `wrangler deploy`. The deploy
 # itself stays a human-run action — no CI step deploys automatically.
