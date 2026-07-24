@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Brand mark: app-brand icon (App.tsx) と同一のパス。背景はデザイントークン --accent。 -->
+  <rect width="24" height="24" rx="5.5" fill="#e08a2b" />
+  <g
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    transform="translate(1.5 1.5) scale(0.875)"
+  >
+    <path d="M3 21h18" />
+    <path d="M5 21V7l8-4v18" />
+    <path d="M19 21V11l-6-4" />
+  </g>
+</svg>
