@@ -3,10 +3,25 @@ main = "src/index.ts"
 compatibility_date = "2025-11-01"
 
 # Local dev: `pnpm --filter @civil-terrain/api dev` (wrangler dev, port 8787).
-# Deploys stay manual and human-approved; no deploy script is wired on purpose.
+# Deploy: `pnpm deploy` (root) builds the SPA then `wrangler deploy`. The deploy
+# itself stays a human-run action — no CI step deploys automatically.
 
 [observability]
 enabled = true
+
+# Static Assets: this single Worker serves both the SPA and the API on one
+# origin (no CORS, no separate Pages project). `directory` is resolved relative
+# to this file, so ../web/dist is apps/web/dist (built by `vite build`).
+#   - run_worker_first = ["/api/*"]  -> every /api/* request runs the Worker
+#     (router.ts handles /api/v1/*); all other paths are served from the SPA
+#     build, and unmatched client routes fall back to index.html via
+#     not_found_handling. Without this, unmatched non-API paths would reach the
+#     Worker and router.ts would 400 them, breaking SPA deep links.
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
 
 # Database access is provided through a Hyperdrive binding (see src/env.ts).
 # Uncomment and set the config id when the database is connected:

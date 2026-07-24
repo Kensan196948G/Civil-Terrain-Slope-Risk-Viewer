@@ -5,9 +5,9 @@
     "release_deadline": "2027-01-17",
     "phase_mode": "development"
   },
-  "goal": "Phase 1「リリース直前」→ Phase 2「本番リリース」→ Phase 3「安定化」を一Goalとして遂行。当面はSprint 2 UI連携 (PR #18) をproduction-safeにしマージ判定Y/Nを提示。",
-  "phase": "Review",
-  "resume_point": "PR #18 (地図クリック→標高表示のUI連携、Issue #17、head de0f08e) がマージ判定Y/N待ち。ローカル検証全green (test 214/214, lint/format/typecheck/build)、CIは新head de0f08eで再走中。READMEを実態へ更新済 (de0f08e)。監査脆弱性6件 (critical1/high2/mod3) は全てdev/testツールチェーン依存で本番非影響 → Issue #19で追跡。未コミットのCLAUDE.md/START_PROMPT.mdはユーザー作業のため保護 (本作業では触れない)。Yなら merge→main CI確認→ (本番Cloudflare/Neon未プロビジョニングのためデプロイは人間手動、環境一意特定不可)。次候補: Issue #2(SAST) #4(NormalizedLandformClass) #8(Low棚卸し) #14(DNS rebinding) #19(監査是正)。",
+  "goal": "Phase 1「リリース直前」→ Phase 2「本番リリース」→ Phase 3「安定化」を一Goalとして遂行。PR #18 (Sprint 2 UI連携) はd039c6eでmerge済。現在はデプロイブロッカー解除 (item1: 統合Worker+Assets配線)、Issue #19監査是正 (item2)、E2E拡充+残MVPロードマップ (item3) をproduction-safeにし各PRのマージ判定Y/Nを提示。",
+  "phase": "Development",
+  "resume_point": "item1 (デプロイ配線): ブランチchore/deploy-wiring (origin/main d039c6eから分岐) で統合Worker+Static Assets構成を配線。apps/api/wrangler.tomlへ[assets] (directory=../web/dist, run_worker_first=[\"/api/*\"], not_found_handling=single-page-application) 追加、root/apps deployスクリプト追加、.env.example更新、docs/デプロイとリリース.md全面改訂。現行MVP (地図+/elevation) はDB非依存のためCloudflare Workerのみ・Neon/secret不要でデプロイ可能。ローカル検証全green (frozen install/web build/wrangler dry-run[assets]/lint/format/typecheck/test 214/build)、e2eは当環境headless Chrome起動不可のためCI委譲。次: commit→push→main宛PR (§17 provisioning節: Cloudflareアカウント一意特定・secret不要・rollback=wrangler rollback・Neon延期Sprint 3+・mergeは自動デプロイしない=人間手動) →マージ判定Y/N。item2=Issue #19監査是正 (独立PR)、item3=E2E click→panel smoke + 残MVPロードマップ。未コミットのCLAUDE.md/START_PROMPT.mdはユーザー作業のため保護 (本作業では触れない)。",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
@@ -24,6 +24,16 @@
   "automation": {
     "auto_issue_generation": true,
     "self_evolution": true
+  },
+  "deploy": {
+    "ready": true,
+    "topology": "unified-worker-static-assets",
+    "wired_in": "chore/deploy-wiring (PR pending)",
+    "human_run": true,
+    "note": "現行MVP (地図 + GET /api/v1/elevation) は単一Cloudflare WorkerでSPA+APIを同一オリジン配信。DB非依存のため本番デプロイにNeon・secretは不要。実デプロイ・provisioningは人間決裁/人間実行 (`pnpm deploy`)。mergeは自動デプロイしない。",
+    "neon_provisioning": "deferred-to-sprint-3+ (DB利用機能=地形分析/確認支援 着手時まで延期。それまで /health/ready は DB未接続を503で正しく表明)",
+    "secrets_required_for_mvp": false,
+    "rollback": "pnpm --filter ./apps/api exec wrangler rollback"
   },
   "completed_issues": [
     {
