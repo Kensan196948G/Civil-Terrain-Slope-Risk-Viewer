@@ -17,7 +17,7 @@
   "devDependencies": {
     "@civil-terrain/geo": "workspace:*",
     "typescript": "^5.7.3",
-    "vitest": "^2.1.8",
-    "wrangler": "^4.111.0"
+    "vitest": "^3.2.7",
+    "wrangler": "^4.114.0"
   }
 }
