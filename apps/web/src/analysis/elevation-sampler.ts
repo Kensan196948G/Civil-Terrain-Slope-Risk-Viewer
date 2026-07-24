@@ -39,7 +39,9 @@ export class DemTileStore {
   private readonly fetchImpl: typeof fetch;
 
   constructor(fetchImpl: typeof fetch = fetch) {
-    this.fetchImpl = fetchImpl;
+    // window.fetch はプロパティ経由の呼び出し (this=DemTileStore) だと
+    // "Illegal invocation" を投げる。globalThis へ束縛して保持する。
+    this.fetchImpl = fetchImpl.bind(globalThis);
   }
 
   get(source: DemSource, x: number, y: number): Promise<TileState> {
