@@ -152,7 +152,7 @@ flowchart LR
     R["✅ 要件定義"] --> D["✅ 詳細設計"] --> S0["✅ Sprint 0 基盤"] --> MVP["✅ MVP実装"] --> REL["✅ v0.2.0 本番公開"] --> UAT["⬜ UAT"]
 ```
 
-- 🚀 **本番稼働中 (v0.2.0)**: <https://civil-terrain-api.kensan1969.workers.dev> — 統合Cloudflare Worker (SPA + API 単一オリジン)。カスタムドメインは未割当 (別途Approval PRで実施予定)
+- 🚀 **本番稼働中 (v0.2.0)**: <https://terrain-slope.mirai-dx-platform.com> — 統合Cloudflare Worker (SPA + API 単一オリジン)。カスタムドメイン割当済み (PR #30/#31。workers.dev URL は無効化し正規URLへ一本化)
 - ✅ 要件定義書 v1.0.0 / 詳細設計仕様書 v1.0.0 / OpenAPI 3.1初版 (`openapi/openapi.yaml`)
 - ✅ Sprint 0: monorepoスケルトン (`apps/*`, `packages/*`) + ゴールデンfixture (現在291テスト全パス)
 - ✅ CI (`.github/workflows/ci.yml`、Node 22。lint/format/typecheck/test/build/Workers bundle dry-run/E2E smoke/dependency audit)
@@ -162,7 +162,7 @@ flowchart LR
 - ✅ 再設計100%適用 (PR #27): 5タブUI・地点検索 (地名/緯度経度)・選択地点マーカー・DEM状態表示・出力タブ
 - ✅ 分析3タブ本番実装 (PR #28): 地形分析 (Horn傾斜統計 30°=急傾斜地法基準 + TPI地形分類)・断面分析 (2点指定→縦断プロファイル、欠損非補間)・確認支援 (実測メトリクスのルール評価)。GSI DEM実データのクライアントサイド解析、検索リセット付き
 - 🚧 既知の制約: `GET /api/v1/health/ready` は503 (Neon未接続の正直な報告。DB利用機能はSprint 3+)。レポート出力 (Markdown/CSV/JSON) は準備中
-- ⬜ UAT・カスタムドメイン割当・Neon接続 (Sprint 3+)
+- ⬜ UAT・Neon接続 (Sprint 3+)・レポート出力・分析タブE2E拡充
 
 ## 🤝 コントリビューション
 

@@ -29,18 +29,18 @@
     "ready": true,
     "deployed": true,
     "topology": "unified-worker-static-assets",
-    "production_url": "https://civil-terrain-api.kensan1969.workers.dev",
+    "production_url": "https://terrain-slope.mirai-dx-platform.com",
     "worker": "civil-terrain-api",
-    "version_id": "4e6e91eb-815d-4506-b10f-1c354b6d31f8",
+    "version_id": "5a58a131-1cdc-43f7-b3b0-e2696dd192d1",
     "release": "v0.2.0",
-    "commit": "93b8ea824a8feba4a0008b270f4f272644dbf736",
+    "commit": "8d00625 (v0.2.0=93b8ea8 + custom domain PR #30/#31)",
     "deployed_at": "2026-07-24T06:20:00Z",
-    "custom_domain": "未割当 (mirai-dx-platform.com配下は既存設定になし。割当はApproval PR事項)",
+    "custom_domain": "terrain-slope.mirai-dx-platform.com (ユーザー指定 2026-07-24、Workers Custom Domain。workers.dev は既定で無効化され正規URLへ一本化)",
     "neon_provisioning": "deferred-to-sprint-3+ (それまで /health/ready は DB未接続を503で正しく表明)",
     "secrets_required_for_mvp": false,
     "rollback": "初回デプロイのため旧版なし。障害時は修正版再デプロイまたはWorker無効化。以後は `pnpm --filter ./apps/api exec wrangler rollback`",
     "human_run": true,
-    "note": "2026-07-24 /goalコマンドの明示的実行承認により初回本番デプロイ実施。smoke test 9項目PASS (health/ready 503は想定)。observability有効・全リクエストoutcome=ok"
+    "note": "2026-07-24 /goal実行承認により初回本番デプロイ。その後ユーザー指定でカスタムドメイン割当 (PR #30 routes位置バグ→PR #31修正)。smoke test PASS (health/ready 503は想定)。observability有効"
   },
   "completed_issues": [
     {
