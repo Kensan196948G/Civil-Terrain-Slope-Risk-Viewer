@@ -53,6 +53,17 @@ function collectErrors(page: Page): string[] {
 }
 
 test.beforeEach(async ({ page }) => {
+  // [debug] CI での DEM 取得失敗を特定するための一時ロギング (原因判明後に削除)。
+  page.on("request", (request) => {
+    if (request.url().includes("gsi.go.jp")) {
+      console.log(`[dbg req] ${request.url()}`);
+    }
+  });
+  page.on("requestfailed", (request) => {
+    if (request.url().includes("gsi.go.jp")) {
+      console.log(`[dbg reqfail] ${request.url()} :: ${request.failure()?.errorText}`);
+    }
+  });
   // GSI タイル (地図・DEM とも) は合成 PNG へ差し替え、ネットワーク非依存にする。
   await page.route("https://cyberjapandata.gsi.go.jp/**", async (route) => {
     await route.fulfill({ contentType: "image/png", body: FIXTURE_TILE });
@@ -80,8 +91,31 @@ test("地形分析: 地点選択→タブ切替で傾斜統計と地形分類が
   const tab = page.getByRole("region", { name: "地形分析" });
   await expect(tab.getByText("対象地点:")).toBeVisible();
 
+  // [debug] ページ内から sampler と同条件で DEM タイルを直接 fetch し、
+  // route 差し替えの成否と失敗理由を CI ログへ出す (原因判明後に削除)。
+  const probe = await page.evaluate(async () => {
+    const url = "https://cyberjapandata.gsi.go.jp/xyz/dem5a_png/15/29012/12939.png";
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      const buf = await res.arrayBuffer();
+      return `status=${res.status} bytes=${buf.byteLength}`;
+    } catch (error) {
+      return `ERR ${String(error)}`;
+    }
+  });
+  console.log(`[dbg probe] ${probe}`);
+  const tabText = await tab.innerText().catch(() => "(unavailable)");
+  console.log(`[dbg tab-初期] ${tabText.replaceAll("\n", " | ").slice(0, 300)}`);
+
   // done(ok) 分岐: 統計グリッドが出れば「判定不能」ノートには入っていない。
-  await expect(tab.getByText("平均傾斜")).toBeVisible();
+  // [debug] 20s 待ち (タイル取得タイムアウト 15s 後の最終状態も観測するため)。
+  await expect(tab.getByText("平均傾斜"))
+    .toBeVisible({ timeout: 20000 })
+    .catch(async (error) => {
+      const finalText = await tab.innerText().catch(() => "(unavailable)");
+      console.log(`[dbg tab-最終] ${finalText.replaceAll("\n", " | ").slice(0, 400)}`);
+      throw error;
+    });
   await expect(tab.getByText("最大傾斜")).toBeVisible();
   await expect(tab.getByRole("heading", { name: "地形分類 内訳" })).toBeVisible();
   // 完全平坦 fixture なので分類は「平坦」が現れる (凡例行)。
