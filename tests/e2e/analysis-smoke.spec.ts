@@ -1,12 +1,16 @@
-import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { buildUniformDemTilePng } from "./synthetic-tile";
 
 /**
  * 分析3タブ (地形分析・断面分析・確認支援) の smoke (Issue #33)。
  *
- * DEM タイルは 02-plain fixture (完全平坦 12.50 m・傾斜 0°) へ差し替えるため、
- * 各タブの結果は決定的になる: 傾斜統計 0°・地形分類 平坦・確認カード 0 件。
+ * DEM タイルは実行時生成の 256×256 均一標高タイル (12.50 m・傾斜 0°) へ差し
+ * 替えるため、各タブの結果は決定的になる: 傾斜統計 0°・地形分類 平坦・確認
+ * カード 0 件。tests/fixtures/dem の 8×8 golden fixture は寸法契約 (実 GSI
+ * タイル = 256×256) を満たさず、分析サンプラーの画素参照が範囲外になるため
+ * ここでは使わない (synthetic-tile.ts 参照)。
+ *
  * 単点標高 API (/api/v1/elevation) は地点パネル用で、分析はクライアント側の
  * タイル直取得のみに依存する (elevation-smoke.spec.ts と同じモック方針)。
  *
@@ -15,7 +19,8 @@ import type { Page } from "@playwright/test";
  * (zoom 15・lat 35.36 で約 3.9 m/px → 150 px ≈ 585 m、有効範囲 30 m〜20 km 内)。
  */
 
-const FIXTURE_TILE = readFileSync(new URL("../fixtures/dem/02-plain.png", import.meta.url));
+const TILE_ELEVATION_M = 12.5;
+const SYNTHETIC_TILE = buildUniformDemTilePng(TILE_ELEVATION_M);
 
 /** 視点固定ハッシュ。分析タブは表示中心付近の地点選択を前提とする。 */
 const VIEW_HASH = "#view=15/35.36/138.72";
@@ -24,7 +29,7 @@ const VIEW_HASH = "#view=15/35.36/138.72";
 const OK_BODY = {
   data: {
     coordinate: { lat: 35.36, lon: 138.72 },
-    elevationM: 12.5,
+    elevationM: TILE_ELEVATION_M,
     source: "gsi-dem5a",
     quality: { grade: "A", coverage: "full" },
     provenance: [
@@ -53,20 +58,9 @@ function collectErrors(page: Page): string[] {
 }
 
 test.beforeEach(async ({ page }) => {
-  // [debug] CI での DEM 取得失敗を特定するための一時ロギング (原因判明後に削除)。
-  page.on("request", (request) => {
-    if (request.url().includes("gsi.go.jp")) {
-      console.log(`[dbg req] ${request.url()}`);
-    }
-  });
-  page.on("requestfailed", (request) => {
-    if (request.url().includes("gsi.go.jp")) {
-      console.log(`[dbg reqfail] ${request.url()} :: ${request.failure()?.errorText}`);
-    }
-  });
   // GSI タイル (地図・DEM とも) は合成 PNG へ差し替え、ネットワーク非依存にする。
   await page.route("https://cyberjapandata.gsi.go.jp/**", async (route) => {
-    await route.fulfill({ contentType: "image/png", body: FIXTURE_TILE });
+    await route.fulfill({ contentType: "image/png", body: SYNTHETIC_TILE });
   });
   await page.route("**/api/v1/elevation**", async (route) => {
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(OK_BODY) });
@@ -91,31 +85,8 @@ test("地形分析: 地点選択→タブ切替で傾斜統計と地形分類が
   const tab = page.getByRole("region", { name: "地形分析" });
   await expect(tab.getByText("対象地点:")).toBeVisible();
 
-  // [debug] ページ内から sampler と同条件で DEM タイルを直接 fetch し、
-  // route 差し替えの成否と失敗理由を CI ログへ出す (原因判明後に削除)。
-  const probe = await page.evaluate(async () => {
-    const url = "https://cyberjapandata.gsi.go.jp/xyz/dem5a_png/15/29012/12939.png";
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-      const buf = await res.arrayBuffer();
-      return `status=${res.status} bytes=${buf.byteLength}`;
-    } catch (error) {
-      return `ERR ${String(error)}`;
-    }
-  });
-  console.log(`[dbg probe] ${probe}`);
-  const tabText = await tab.innerText().catch(() => "(unavailable)");
-  console.log(`[dbg tab-初期] ${tabText.replaceAll("\n", " | ").slice(0, 300)}`);
-
   // done(ok) 分岐: 統計グリッドが出れば「判定不能」ノートには入っていない。
-  // [debug] 20s 待ち (タイル取得タイムアウト 15s 後の最終状態も観測するため)。
-  await expect(tab.getByText("平均傾斜"))
-    .toBeVisible({ timeout: 20000 })
-    .catch(async (error) => {
-      const finalText = await tab.innerText().catch(() => "(unavailable)");
-      console.log(`[dbg tab-最終] ${finalText.replaceAll("\n", " | ").slice(0, 400)}`);
-      throw error;
-    });
+  await expect(tab.getByText("平均傾斜")).toBeVisible();
   await expect(tab.getByText("最大傾斜")).toBeVisible();
   await expect(tab.getByRole("heading", { name: "地形分類 内訳" })).toBeVisible();
   // 完全平坦 fixture なので分類は「平坦」が現れる (凡例行)。
