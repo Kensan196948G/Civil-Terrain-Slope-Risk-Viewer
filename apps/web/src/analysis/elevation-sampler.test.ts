@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
+import { encodePng } from "@civil-terrain/geo";
 import { DemTileStore, sampleElevation, summarizeSamples, worstGradeOf } from "./elevation-sampler";
-import { fakeTileFetch, pngResponse, uniformDemTile } from "./test-tiles";
+import { elevationToRgb, fakeTileFetch, pngResponse, uniformDemTile } from "./test-tiles";
 
 const COORD = { lat: 35.36, lon: 138.72 };
 
@@ -78,6 +79,25 @@ describe("sampleElevation", () => {
     await sampleElevation(store, COORD);
 
     expect(receivedInit?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("treats a tile with unexpected dimensions as failed instead of crashing", async () => {
+    // 実 GSI タイルは 256x256。寸法契約に違反する応答 (例: 縮小 PNG) では
+    // 画素参照が範囲外になるが、解析全体を例外で落とさず「不在を断定でき
+    // ない (failed)」として扱う (Issue #33 の E2E 初回失敗の regression)。
+    const rgb = elevationToRgb(50);
+    const tiny = await encodePng([
+      [rgb, rgb],
+      [rgb, rgb],
+    ]);
+    const store = new DemTileStore(
+      fakeTileFetch((url) => (url.includes("dem5a_png") ? pngResponse(tiny) : null)),
+    );
+
+    const outcome = await sampleElevation(store, COORD);
+
+    expect(outcome.elevationM).toBeNull();
+    expect(outcome.failed).toBe(true);
   });
 
   it("caches tiles so repeated samples do not refetch", async () => {

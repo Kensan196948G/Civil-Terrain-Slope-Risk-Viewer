@@ -106,7 +106,15 @@ export async function sampleElevation(
     if (state.kind === "absent") {
       continue;
     }
-    const elevationM = decodeElevation(...rgbAt(state.png, px, py));
+    let elevationM: number | null;
+    try {
+      elevationM = decodeElevation(...rgbAt(state.png, px, py));
+    } catch {
+      // タイルは取得できたが画素参照に失敗 (想定外の寸法など上流異常)。
+      // 1タイルの異常で解析全体を落とさず、不在を断定できない failed とする。
+      failed = true;
+      continue;
+    }
     if (elevationM === null) {
       continue; // No-data sentinel — 次のソースへ。
     }
