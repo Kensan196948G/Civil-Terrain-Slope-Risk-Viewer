@@ -5,9 +5,9 @@
     "release_deadline": "2027-01-17",
     "phase_mode": "development"
   },
-  "goal": "v0.2.0 本番リリース完了 (2026-07-24 /goal実行承認に基づく)。次Goal: UAT・カスタムドメイン割当(Approval PR)・Neon接続(Sprint 3+)・レポート出力",
+  "goal": "v0.2.0 本番リリース完了。次Goal: 総合評価・改善 (2026-08-12) の適用と再評価、GitHubリポジトリ復旧後のPR/CI、Neon接続(Sprint 3+)、UAT",
   "phase": "Stabilize",
-  "resume_point": "v0.2.0本番稼働中 (PR #27 再設計100%適用 + PR #28 分析3タブ実装 + PR #29 version bump → tag v0.2.0)。残: Issue化済みのE2E拡充・カスタムドメイン、Sprint 3+ (Neon接続・レポート出力・住所ジオコーディング)。preview常駐は port 5200 (civil-terrain-webui.service)",
+  "resume_point": "2026-08-12評価改善: レポート出力(MD/CSV/JSON)・Rate Limit・Access JWT検証・capabilities/sources・カバレッジ80%ゲート・コード分割・a11y改善を実装し、lint/typecheck/test(329)/coverage(93%)/build/wrangler dry-run PASS。未コミット (GitHubリポジトリが404のためpush/PR不可)。E2Eはローカルheadless Chrome制約でNOT RUN。残: GitHub復旧→commit/push/PR→CI→デプロイ、Neon接続(Sprint 3+)、UAT",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
@@ -43,6 +43,11 @@
     "note": "2026-07-24 /goal実行承認により初回本番デプロイ。その後ユーザー指定でカスタムドメイン割当 (PR #30 routes位置バグ→PR #31修正)。smoke test PASS (health/ready 503は想定)。observability有効"
   },
   "completed_issues": [
+    {
+      "id": "EVAL-20260812",
+      "title": "総合評価・改善 (2026-08-12): セキュリティ・出力・品質ゲート・性能・a11y",
+      "detail": "レポート出力(MD/CSV/JSON、クライアントサイド、CSV式注入対策/出典/判定不能明記)、スライディングウィンドウ式Rate Limit(429+Retry-After、既定120/分/IP)、Cloudflare Access JWTのWorker側検証(RS256/exp/aud、設定時のみ有効化、401/403/公開ルート除外)、GET /capabilities・GET /sources実装、カバレッジ計測CI化(80%閾値、実測93.3%)、MapLibre遅延読み込み+ベンダーチャンク分割(初期JS 1.26MB→約205KB)、スキップリンク/prefers-reduced-motion/タッチターゲット44px、WebGL失敗時のエラーバウンダリ縮退UI。CSP metaがVite devを破壊する問題とGoogle Fonts style-src欠落を修正。brace-expansion overrideをminimatch 3/9向け2.1.4・minimatch 10向け自然解決5.0.9へ変更しカバレッジツール互換を回復、postcss 8.5.23+へ更新。lint/typecheck/test(335)/format/build/wrangler dry-run全PASS。E2Eは環境制約(Chrome SIGTRAP/Firefox WebGL不可)でNOT RUN、GitHub 404でCI未実行。"
+    },
     {
       "id": "SPRINT0-DOMAIN",
       "title": "packages/domain スケルトン実装完了",

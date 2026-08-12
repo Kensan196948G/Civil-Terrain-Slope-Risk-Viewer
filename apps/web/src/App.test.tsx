@@ -84,6 +84,12 @@ vi.mock("maplibre-gl", () => ({
   },
 }));
 
+/** App を描画し、lazy import された MapView のマウント (FakeMap生成) を待つ。 */
+async function renderApp(): Promise<void> {
+  render(<App />);
+  await screen.findByRole("region", { name: "地図" });
+}
+
 describe("App", () => {
   beforeEach(() => {
     window.history.replaceState(null, "", "#");
@@ -145,7 +151,7 @@ describe("App", () => {
           }),
       );
 
-    render(<App />);
+    await renderApp();
     const map = mocks.FakeMap.instances[0];
     expect(map).toBeDefined();
 
@@ -193,7 +199,7 @@ describe("App", () => {
 
   it("resolves a landmark search: flies the map and fetches the elevation", async () => {
     fetchElevationMock.mockResolvedValue(okResult(777));
-    render(<App />);
+    await renderApp();
 
     fireEvent.change(screen.getByRole("textbox", { name: "地点検索" }), {
       target: { value: "富士山" },
@@ -223,7 +229,7 @@ describe("App", () => {
   it("runs the terrain analysis with real DEM data when the tab opens (地形分析)", async () => {
     fetchElevationMock.mockResolvedValue(okResult(100));
     analyzeTerrainMock.mockResolvedValue({ kind: "no-coverage" });
-    render(<App />);
+    await renderApp();
     const map = mocks.FakeMap.instances[0];
 
     await act(async () => {
@@ -239,7 +245,7 @@ describe("App", () => {
 
   it("picks a section line on the map and runs the section analysis (断面分析)", async () => {
     analyzeSectionMock.mockResolvedValue({ kind: "no-coverage" });
-    render(<App />);
+    await renderApp();
     const map = mocks.FakeMap.instances[0];
 
     fireEvent.click(screen.getByRole("button", { name: "断面分析" }));
@@ -270,7 +276,7 @@ describe("App", () => {
 
   it("リセット clears the selection and flies back to the pre-search view", async () => {
     fetchElevationMock.mockResolvedValue(okResult(555));
-    render(<App />);
+    await renderApp();
 
     fireEvent.change(screen.getByRole("textbox", { name: "地点検索" }), {
       target: { value: "富士山" },

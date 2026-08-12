@@ -290,10 +290,15 @@ export function MapView({
     if (map === null || focus == null) {
       return;
     }
+    // 視覚過敏対応: ユーザーが動きの低減を求めている場合は flyTo を瞬時に行う。
+    // matchMedia 未実装環境 (旧 jsdom 等) では既定のアニメーションに倒す。
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
     map.flyTo({
       center: [focus.coordinate.lon, focus.coordinate.lat],
       zoom: focus.zoom,
-      duration: 800,
+      duration: prefersReducedMotion ? 0 : 800,
     });
     // The token makes repeat searches for the same place fly again.
   }, [focus]);

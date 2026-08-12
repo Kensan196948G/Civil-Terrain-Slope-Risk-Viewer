@@ -12,3 +12,9 @@ pnpm-lock.yaml
 .claude/
 CLAUDE.md
 .coderabbit.yaml
+
+# ユーザー作成・AI生成の評価報告書とセッション状態。自動整形による
+# 意図しない大規模な体裁変更を避けるため対象外とする。
+AGENTS.md
+.omo/
+docs/総合評価改善報告書.md

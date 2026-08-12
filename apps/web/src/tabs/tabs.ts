@@ -3,7 +3,7 @@
  * 派生させ、ラベルの二重管理を避ける。
  *
  * 全タブ実装済み: 地図 (SCR-01)、地形分析・断面分析・確認支援 (DEM 実データ
- * からのクライアントサイド解析)、出力・共有 (共有URL。レポート出力のみ準備中)。
+ * からのクライアントサイド解析)、出力・共有 (共有URL + MD/CSV/JSON レポート)。
  */
 
 export type TabId = "map" | "terrain" | "cross-section" | "confirm" | "output";
@@ -52,7 +52,7 @@ export const TABS: readonly TabDef[] = [
     icon: "🧾",
     label: "出力・共有",
     topbarSub: "共有URL",
-    context: "表示状態の共有URLを取得できます。レポート出力は準備中です。",
+    context: "表示状態の共有URLと、解析結果のレポート (Markdown/CSV/JSON) を出力できます。",
   },
 ];
 

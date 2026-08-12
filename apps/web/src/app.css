@@ -674,6 +674,32 @@ body {
   width: 100%;
 }
 
+.map-view--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  background: var(--bg-2);
+}
+
+.map-view--error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  border-radius: var(--radius);
+  background: var(--red-bg, #fdf0ee);
+  color: var(--text);
+}
+
+.map-view--error .map-error-title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--red-2, #d6443b);
+}
+
 /* ---- DEM metadata cards ----------------------------------------------- */
 
 .dem-meta-grid {
@@ -758,6 +784,24 @@ body {
 .btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* キーボード利用者が最初にたどり着くスキップリンク (スクリーンリーダー対応)。
+   フォーカス時のみ表示し、視覚的ノイズを避ける。 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 0 0 var(--radius) 0;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: 0;
 }
 
 .btn:disabled {
@@ -1383,5 +1427,13 @@ body {
   .target-point-note {
     margin-left: 0;
     width: 100%;
+  }
+
+  /* タッチ操作の最小サイズ (WCAG 2.5.5 / 2.5.8 の実用基準 44px)。 */
+  .app-nav .nav-item,
+  .btn:not(.btn--small),
+  .site-search-submit,
+  .share-url-input {
+    min-height: 44px;
   }
 }
