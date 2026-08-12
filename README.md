@@ -168,7 +168,7 @@ flowchart LR
 - ✅ 分析3タブ本番実装 (PR #28): 地形分析 (Horn傾斜統計 30°=急傾斜地法基準 + TPI地形分類)・断面分析 (2点指定→縦断プロファイル、欠損非補間)・確認支援 (実測メトリクスのルール評価)。GSI DEM実データのクライアントサイド解析、検索リセット付き
 - ✅ 評価改善 (2026-08-12): APIレート制限 (429+Retry-After) / Cloudflare Access JWTのWorker側検証 (設定時のみ) / `GET /capabilities`・`GET /sources` 実装 / レポート出力 (Markdown・CSV・JSON、クライアントサイド保存、出典・判定不能を明記) / テストカバレッジ80%ゲート (実測93%) / コード分割 (初期JS 1.26MB→約205KB、MapLibreは遅延読み込み) / スキップリンク・prefers-reduced-motion・タッチターゲット44px等のアクセシビリティ改善 / WebGL不可環境でも地図以外を継続利用できるエラーバウンダリ / CSP meta廃止とGoogle Fonts許可 (開発・E2E互換の欠陥修正)
 - ✅ 追加実装 (2026-08-12 第2弾): 重ねるハザードマップ「土砂災害警戒区域」3種 (土石流/急傾斜地/地すべり) の重畳 (CSP・E2E対応込み) / 分析履歴 (localStorage・一覧・開く・削除・2地点比較) / PWA (manifest・アイコン生成・Service Worker。API・外部タイルはキャッシュしない) / ライセンス方針・AI支援機能設計書
-- 🚧 既知の制約: `GET /api/v1/health/ready` は503 (Neon未接続の正直な報告。DB利用機能はSprint 3+)。E2Eはローカル実行環境でheadless Chromeが起動できないためCI依存 (2026-08-12 CIで8/8 PASS)。Access Group は未作成 (RBAC本番有効化待ち)。Neon はプラン上限のためプロビジョニング待ち
+- 🚧 既知の制約: `GET /api/v1/health/ready` は503 (Neon未接続の正直な報告。DB利用機能はSprint 3+)。E2Eはローカル実行環境でheadless Chromeが起動できないためCI依存 (2026-08-12 PR #4 CIで9/9 PASS)。Access Group は未作成 (RBAC本番有効化待ち)。Neon はプラン上限のためプロビジョニング待ち
 - ⬜ 残: Access Group作成・secret登録 / 本番スモーク15項目・実機UAT / Neon接続 / アラート作成 (通知API権限待ち) / 監査ログDB永続化 / グローバルRate Limiting / AI支援パイロット (予算承認後)
 
 ## 🤝 コントリビューション
