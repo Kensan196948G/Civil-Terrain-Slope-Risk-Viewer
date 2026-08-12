@@ -16,11 +16,25 @@ describe("layer definitions", () => {
     }
   });
 
-  it("uses XYZ tile URL templates on the GSI host", () => {
+  it("uses XYZ tile URL templates on official GSI hosts", () => {
     for (const layer of ALL_LAYERS) {
       expect(layer.tileUrlTemplate).toMatch(
-        /^https:\/\/cyberjapandata\.gsi\.go\.jp\/xyz\/[a-z]+\/\{z\}\/\{x\}\/\{y\}\.(png|jpg)$/,
+        /^https:\/\/(cyberjapandata|disaportaldata)\.gsi\.go\.jp\/.+\/\{z\}\/\{x\}\/\{y\}\.(png|jpg)$/,
       );
+    }
+  });
+
+  it("adds official sediment disaster warning zones from the hazard map open data", () => {
+    const ids = OVERLAY_LAYERS.filter((layer) => layer.id.startsWith("sabo-")).map(
+      (layer) => layer.id,
+    );
+    expect(ids).toEqual(["sabo-debris", "sabo-steep", "sabo-landslide"]);
+
+    for (const layer of OVERLAY_LAYERS.filter((layer) => layer.id.startsWith("sabo-"))) {
+      expect(layer.tileUrlTemplate).toMatch(/^https:\/\/disaportaldata\.gsi\.go\.jp\/raster\/05_/);
+      expect(layer.minZoom).toBe(2);
+      expect(layer.maxZoom).toBe(17);
+      expect(layer.attribution).toContain("重ねるハザードマップ");
     }
   });
 
@@ -41,6 +55,9 @@ describe("layer definitions", () => {
     expect(isBaseLayerId("std")).toBe(true);
     expect(isBaseLayerId("slope")).toBe(false);
     expect(isOverlayLayerId("slope")).toBe(true);
+    expect(isOverlayLayerId("sabo-debris")).toBe(true);
+    expect(isOverlayLayerId("sabo-steep")).toBe(true);
+    expect(isOverlayLayerId("sabo-landslide")).toBe(true);
     expect(isOverlayLayerId("std")).toBe(false);
     expect(isBaseLayerId("unknown")).toBe(false);
     expect(isOverlayLayerId("unknown")).toBe(false);

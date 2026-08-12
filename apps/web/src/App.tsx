@@ -20,6 +20,7 @@ import type { Coordinate } from "./search/site-search";
 import { AppNav } from "./tabs/AppNav";
 import { buildConfirmCards } from "./analysis/confirm-cards";
 import { ConfirmTab } from "./tabs/ConfirmTab";
+import { HistoryTab } from "./tabs/HistoryTab";
 import { OutputTab } from "./tabs/OutputTab";
 import { SectionTab } from "./tabs/SectionTab";
 import type { SectionAnalysisState, SectionPickPhase } from "./tabs/SectionTab";
@@ -27,6 +28,15 @@ import { TerrainTab } from "./tabs/TerrainTab";
 import type { TerrainState } from "./tabs/TerrainTab";
 import { TABS, findTab } from "./tabs/tabs";
 import type { TabId } from "./tabs/tabs";
+import {
+  clearHistory,
+  createBrowserHistoryStorage,
+  createSavedAnalysis,
+  deleteAnalysis,
+  loadHistory,
+  persistAnalysis,
+} from "./history/analysis-history";
+import type { AnalysisSnapshot, SavedAnalysis } from "./history/analysis-history";
 import "./app.css";
 
 /**
@@ -83,6 +93,10 @@ export function App(): ReactElement {
   const [sectionPick, setSectionPick] = useState<SectionPickPhase>("idle");
   const [sectionLine, setSectionLine] = useState<SectionLineState>({ start: null, end: null });
   const [sectionAnalysis, setSectionAnalysis] = useState<SectionAnalysisState>({ phase: "idle" });
+  const [historyItems, setHistoryItems] = useState<readonly SavedAnalysis[]>(() =>
+    loadHistory(createBrowserHistoryStorage()),
+  );
+  const [historySaveStatus, setHistorySaveStatus] = useState<"idle" | "saved" | "error">("idle");
   // Serial numbers guard against out-of-order async responses.
   const requestSeq = useRef(0);
   const terrainSeq = useRef(0);
@@ -120,6 +134,7 @@ export function App(): ReactElement {
 
   const requestElevation = useCallback((coordinate: Coordinate) => {
     const seq = ++requestSeq.current;
+    setHistorySaveStatus("idle");
     setElevation({ phase: "loading", coordinate });
     void fetchElevation(coordinate).then((result) => {
       if (requestSeq.current === seq) {
@@ -211,6 +226,7 @@ export function App(): ReactElement {
     setSectionPick("idle");
     setSectionLine({ start: null, end: null });
     setSectionAnalysis({ phase: "idle" });
+    setHistorySaveStatus("idle");
     setSearchQuery("");
     setSearchError(null);
     const back = preSearchViewRef.current;
@@ -238,6 +254,82 @@ export function App(): ReactElement {
 
   // 選択地点は標高取得状態から導出する (別 state にすると乖離バグの温床)。
   const selectedPoint: Coordinate | null = elevation.phase === "idle" ? null : elevation.coordinate;
+
+  // 現在の解析状態のスナップショット。保存ボタンの有効化と履歴保存に使う。
+  const currentAnalysis: AnalysisSnapshot | null =
+    elevation.phase === "done" && selectedPoint !== null
+      ? {
+          coordinate: selectedPoint,
+          elevation: elevation.result,
+          terrain: terrain.phase === "done" ? terrain.result : null,
+          section: sectionAnalysis.phase === "done" ? sectionAnalysis.result : null,
+          sectionLine: { start: sectionLine.start, end: sectionLine.end },
+        }
+      : null;
+
+  const handleSaveCurrent = useCallback(() => {
+    if (currentAnalysis === null) {
+      return;
+    }
+    const entry = createSavedAnalysis(currentAnalysis);
+    const result = persistAnalysis(historyItems, entry, createBrowserHistoryStorage());
+    setHistoryItems(result.items);
+    setHistorySaveStatus(result.ok ? "saved" : "error");
+  }, [currentAnalysis, historyItems]);
+
+  const handleLoadHistoryItem = useCallback(
+    (id: string) => {
+      const item = historyItems.find((candidate) => candidate.id === id);
+      if (item === undefined) {
+        return;
+      }
+      requestSeq.current++;
+      terrainSeq.current++;
+      sectionSeq.current++;
+      setElevation({ phase: "done", coordinate: item.coordinate, result: item.elevation });
+      setTerrain(
+        item.terrain === null
+          ? { phase: "idle" }
+          : { phase: "done", coordinate: item.coordinate, result: item.terrain },
+      );
+      setSectionAnalysis(
+        item.section === null ? { phase: "idle" } : { phase: "done", result: item.section },
+      );
+      setSectionLine(item.sectionLine ?? { start: null, end: null });
+      setSectionPick("idle");
+      setSearchQuery("");
+      setSearchError(null);
+      preSearchViewRef.current = null;
+      setHistorySaveStatus("idle");
+      setView((current) => ({
+        ...current,
+        lat: item.coordinate.lat,
+        lon: item.coordinate.lon,
+        zoom: Math.max(current.zoom, 11),
+      }));
+      setFocus((current) => ({
+        coordinate: item.coordinate,
+        zoom: Math.max(current?.zoom ?? 11, 11),
+        token: (current?.token ?? 0) + 1,
+      }));
+      setActiveTab("terrain");
+    },
+    [historyItems],
+  );
+
+  const handleDeleteHistoryItem = useCallback((id: string) => {
+    setHistoryItems((current) => {
+      const result = deleteAnalysis(current, id, createBrowserHistoryStorage());
+      return result.ok ? result.items : current;
+    });
+  }, []);
+
+  const handleClearHistory = useCallback(() => {
+    setHistoryItems((current) => {
+      const result = clearHistory(createBrowserHistoryStorage());
+      return result.ok ? result.items : current;
+    });
+  }, []);
 
   // レポート用に確認支援カードを再評価する (ConfirmTab と同一の純粋関数)。
   const confirmOutput = buildConfirmCards({
@@ -478,6 +570,18 @@ export function App(): ReactElement {
                       confirmCards: confirmOutput.cards,
                     }
               }
+            />
+          ) : null}
+          {activeTab === "history" ? (
+            <HistoryTab
+              items={historyItems}
+              current={currentAnalysis}
+              saveStatus={historySaveStatus}
+              onSaveCurrent={handleSaveCurrent}
+              onLoad={handleLoadHistoryItem}
+              onDelete={handleDeleteHistoryItem}
+              onClear={handleClearHistory}
+              onGoToMap={handleGoToMap}
             />
           ) : null}
         </main>

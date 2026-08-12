@@ -93,6 +93,7 @@ async function renderApp(): Promise<void> {
 describe("App", () => {
   beforeEach(() => {
     window.history.replaceState(null, "", "#");
+    window.localStorage.clear();
     mocks.FakeMap.instances = [];
     fetchElevationMock.mockReset();
     analyzeTerrainMock.mockReset();
@@ -272,6 +273,28 @@ describe("App", () => {
     );
     expect(fetchElevationMock).not.toHaveBeenCalled();
     expect(await screen.findByText(/この断面の DEM データはありません/)).toBeInTheDocument();
+  });
+
+  it("saves the completed analysis to browser history and reopens it (履歴)", async () => {
+    fetchElevationMock.mockResolvedValue(okResult(100));
+    analyzeTerrainMock.mockResolvedValue({ kind: "no-coverage" });
+    await renderApp();
+    const map = mocks.FakeMap.instances[0];
+
+    await act(async () => {
+      map?.fire("click", { lngLat: { lat: 35.1, lng: 138.1 } });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "地形分析" }));
+    await screen.findByText(/この範囲の DEM データはありません/);
+
+    fireEvent.click(screen.getByRole("button", { name: "履歴" }));
+    const saveButton = screen.getByRole("button", { name: "現在の分析を保存" });
+    expect(saveButton).toBeEnabled();
+    fireEvent.click(saveButton);
+
+    expect(screen.getByText(/緯度 35.10000 \/ 経度 138.10000/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "開く" }));
+    expect(await screen.findByText(/この範囲の DEM データはありません/)).toBeInTheDocument();
   });
 
   it("リセット clears the selection and flies back to the pre-search view", async () => {

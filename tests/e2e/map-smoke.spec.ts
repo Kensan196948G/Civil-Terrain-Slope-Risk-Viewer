@@ -29,6 +29,9 @@ test.beforeEach(async ({ page }) => {
   await page.route("https://cyberjapandata.gsi.go.jp/**", async (route) => {
     await route.fulfill({ contentType: "image/png", body: FIXTURE_TILE });
   });
+  await page.route("https://disaportaldata.gsi.go.jp/**", async (route) => {
+    await route.fulfill({ contentType: "image/png", body: FIXTURE_TILE });
+  });
 });
 
 test("初期表示: 地図・レイヤーUI・帰属が表示され、コンソールエラーが出ない", async ({ page }) => {
@@ -46,6 +49,10 @@ test("初期表示: 地図・レイヤーUI・帰属が表示され、コンソ�
 
   // 帰属表示の常設 (要件 KPI: 出典表示率 100%)。
   await expect(page.getByRole("link", { name: "国土地理院" })).toBeVisible();
+  await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
+    "href",
+    "/manifest.webmanifest",
+  );
 
   // "Style is not done loading." (PR #9 H1) を含むあらゆるエラーを検出する。
   expect(errors).toEqual([]);
@@ -75,6 +82,23 @@ test("共有URL復元: ハッシュからレイヤー選択が復元される", 
   await expect(page.getByRole("checkbox", { name: "陰影起伏図" })).toBeChecked();
   await expect(page.getByRole("checkbox", { name: "傾斜量図" })).not.toBeChecked();
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+
+  expect(errors).toEqual([]);
+});
+
+test("ハザードレイヤー: 土砂災害警戒区域を重ねると共有URLへ反映されエラーが出ない", async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+
+  await page.goto("/");
+  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+
+  await page.getByRole("checkbox", { name: "土砂災害警戒区域（土石流）" }).check();
+  await page.getByRole("checkbox", { name: "土砂災害警戒区域（地すべり）" }).check();
+
+  await expect(page).toHaveURL(/ov=sabo-debris,sabo-landslide/);
+  await expect(page.getByRole("link", { name: /重ねるハザードマップ/ })).toBeVisible();
 
   expect(errors).toEqual([]);
 });
