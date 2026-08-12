@@ -16,6 +16,8 @@ export interface Env {
   readonly HYPERDRIVE?: Hyperdrive;
   readonly CF_ACCESS_TEAM_DOMAIN?: string;
   readonly CF_ACCESS_AUD?: string;
+  /** 分あたりのAPIリクエスト上限 (クライアントIP単位)。未設定時は 120。 */
+  readonly RATE_LIMIT_PER_MINUTE?: string;
 }
 
 /**

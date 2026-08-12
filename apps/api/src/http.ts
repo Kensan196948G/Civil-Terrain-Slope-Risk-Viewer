@@ -7,6 +7,52 @@ const PROBLEM_CONTENT_TYPE = "application/problem+json; charset=utf-8";
 
 export const REQUEST_ID_HEADER = "x-request-id";
 
+// Security headers applied to every response.
+// References: 詳細設計仕様書 12.1, OWASP Secure Headers Project.
+// CSP needs adjustment when external resources (fonts, tile servers) are used.
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  "script-src 'self'",
+  // SPA inline styles from Vite/Maplibre; MapLibre uses inline style for canvas
+  "style-src 'self' 'unsafe-inline'",
+  // MapLibre worker blob, GSI tiles, fonts
+  "img-src 'self' data: blob: https://cyberjapandata2.gsi.go.jp https://maps.gsi.go.jp",
+  "connect-src 'self' https://cyberjapandata2.gsi.go.jp",
+  "font-src 'self' https://fonts.gstatic.com",
+  "worker-src 'self' blob:",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
+
+const SECURITY_HEADERS: Record<string, string> = {
+  "content-security-policy": CSP_DIRECTIVES,
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy": "camera=(), geolocation=(self), microphone=(), usb=()",
+  "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+};
+
+/**
+ * Injects standard security headers into a Response.
+ * Used to wrap every response (API + static assets) from the fetch handler.
+ */
+export function applySecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    // Prevent overwriting headers already set by the route handler
+    if (!headers.has(key)) {
+      headers.set(key, value);
+    }
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 /** Builds a JSON success response with the shared header conventions. */
 export function jsonResponse(body: unknown, status: number, requestId?: string): Response {
   return new Response(JSON.stringify(body), {

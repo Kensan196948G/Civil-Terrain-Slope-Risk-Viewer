@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { DemTileStore } from "./analysis/elevation-sampler";
 import { analyzeSection } from "./analysis/section-service";
@@ -8,7 +8,6 @@ import { ElevationPanel } from "./elevation/ElevationPanel";
 import type { ElevationPanelState } from "./elevation/ElevationPanel";
 import { fetchElevation } from "./elevation/elevation-client";
 import { LayerSwitcher } from "./map/LayerSwitcher";
-import { MapView } from "./map/MapView";
 import type { MapFocusRequest, SectionLineState } from "./map/MapView";
 import { BASE_LAYERS, OVERLAY_LAYERS } from "./map/layers";
 import type { BaseLayerId, OverlayLayerId } from "./map/layers";
@@ -18,6 +17,7 @@ import { SiteSearch } from "./search/SiteSearch";
 import { parseSearchQuery } from "./search/site-search";
 import type { Coordinate } from "./search/site-search";
 import { AppNav } from "./tabs/AppNav";
+import { buildConfirmCards } from "./analysis/confirm-cards";
 import { ConfirmTab } from "./tabs/ConfirmTab";
 import { OutputTab } from "./tabs/OutputTab";
 import { SectionTab } from "./tabs/SectionTab";
@@ -27,6 +27,12 @@ import type { TerrainState } from "./tabs/TerrainTab";
 import { TABS, findTab } from "./tabs/tabs";
 import type { TabId } from "./tabs/tabs";
 import "./app.css";
+
+/**
+ * MapLibre GL JS は 1MB 超の重い依存のため、地図タブが必要になった時点で
+ * 分割読み込みする (初期ロードの改善。警告はチャンク分割で対処)。
+ */
+const MapView = lazy(() => import("./map/MapView").then((module) => ({ default: module.MapView })));
 
 /**
  * SCR-01 ホーム/地図 (要件 7章)。視覚デザインは Claude Design「Slope Risk
@@ -232,6 +238,12 @@ export function App(): ReactElement {
   // 選択地点は標高取得状態から導出する (別 state にすると乖離バグの温床)。
   const selectedPoint: Coordinate | null = elevation.phase === "idle" ? null : elevation.coordinate;
 
+  // レポート用に確認支援カードを再評価する (ConfirmTab と同一の純粋関数)。
+  const confirmOutput = buildConfirmCards({
+    terrain: terrain.phase === "done" ? terrain.result : null,
+    section: sectionAnalysis.phase === "done" ? sectionAnalysis.result : null,
+  });
+
   const handleTerrainRetry = useCallback(() => {
     tileStoreRef.current = new DemTileStore(); // 失敗キャッシュを捨てて再試行
     if (selectedPoint !== null) {
@@ -280,6 +292,9 @@ export function App(): ReactElement {
 
   return (
     <div className="app">
+      <a className="skip-link" href="#app-content">
+        メインコンテンツへスキップ
+      </a>
       <aside className="app-sidebar">
         <div className="app-brand">
           <span className="app-brand-icon" aria-hidden="true">
@@ -360,7 +375,7 @@ export function App(): ReactElement {
             {dem.text}
           </span>
         </header>
-        <main className="app-content">
+        <main className="app-content" id="app-content">
           <p className="safety-banner" role="note">
             <span aria-hidden="true">⚠️</span>
             <span>
@@ -399,14 +414,22 @@ export function App(): ReactElement {
                   </span>
                 ))}
               </div>
-              <MapView
-                view={view}
-                onViewChange={handleViewChange}
-                onMapClick={handleMapClick}
-                selectedPoint={selectedPoint}
-                sectionLine={sectionLine}
-                focus={focus}
-              />
+              <Suspense
+                fallback={
+                  <div className="map-view map-view--loading" role="status">
+                    地図を読み込んでいます…
+                  </div>
+                }
+              >
+                <MapView
+                  view={view}
+                  onViewChange={handleViewChange}
+                  onMapClick={handleMapClick}
+                  selectedPoint={selectedPoint}
+                  sectionLine={sectionLine}
+                  focus={focus}
+                />
+              </Suspense>
             </section>
             <DemMetaCards state={elevation} />
           </div>
@@ -438,7 +461,22 @@ export function App(): ReactElement {
               onGoToMap={handleGoToMap}
             />
           ) : null}
-          {activeTab === "output" ? <OutputTab shareUrl={shareUrl} /> : null}
+          {activeTab === "output" ? (
+            <OutputTab
+              shareUrl={shareUrl}
+              report={
+                selectedPoint === null
+                  ? null
+                  : {
+                      coordinate: selectedPoint,
+                      elevation: elevation.phase === "done" ? elevation.result : null,
+                      terrain: terrain.phase === "done" ? terrain.result : null,
+                      section: sectionAnalysis.phase === "done" ? sectionAnalysis.result : null,
+                      confirmCards: confirmOutput.cards,
+                    }
+              }
+            />
+          ) : null}
         </main>
       </div>
     </div>
