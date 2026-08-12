@@ -7,11 +7,9 @@
     <!-- SVG favicon 非対応・キャッシュ固着ブラウザ向けの ICO フォールバック -->
     <link rel="alternate icon" type="image/x-icon" sizes="32x32" href="/favicon.ico" />
     <meta name="theme-color" content="#e08a2b" />
-    <!-- CSP: defense-in-depth — the Worker also applies this header on every response -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cyberjapandata2.gsi.go.jp https://maps.gsi.go.jp; connect-src 'self' https://cyberjapandata2.gsi.go.jp; font-src 'self' https://fonts.gstatic.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
-    />
+    <!-- CSP は本番応答ヘッダー (apps/api/src/http.ts) で付与する。
+         meta 方式は Vite dev のインライン HMR スクリプトをブロックし、
+         開発・E2E を破壊するため使わない (2026-08-12 検証で判明)。 -->
     <title>Civil Terrain &amp; Slope Risk Viewer</title>
     <!-- Design system type (Issue #23): IBM Plex Sans JP / Mono. display=swap
          keeps text visible on the system fallback stack while fonts load. -->

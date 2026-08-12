@@ -8,6 +8,7 @@ import { ElevationPanel } from "./elevation/ElevationPanel";
 import type { ElevationPanelState } from "./elevation/ElevationPanel";
 import { fetchElevation } from "./elevation/elevation-client";
 import { LayerSwitcher } from "./map/LayerSwitcher";
+import { MapErrorBoundary } from "./map/MapErrorBoundary";
 import type { MapFocusRequest, SectionLineState } from "./map/MapView";
 import { BASE_LAYERS, OVERLAY_LAYERS } from "./map/layers";
 import type { BaseLayerId, OverlayLayerId } from "./map/layers";
@@ -421,14 +422,16 @@ export function App(): ReactElement {
                   </div>
                 }
               >
-                <MapView
-                  view={view}
-                  onViewChange={handleViewChange}
-                  onMapClick={handleMapClick}
-                  selectedPoint={selectedPoint}
-                  sectionLine={sectionLine}
-                  focus={focus}
-                />
+                <MapErrorBoundary>
+                  <MapView
+                    view={view}
+                    onViewChange={handleViewChange}
+                    onMapClick={handleMapClick}
+                    selectedPoint={selectedPoint}
+                    sectionLine={sectionLine}
+                    focus={focus}
+                  />
+                </MapErrorBoundary>
               </Suspense>
             </section>
             <DemMetaCards state={elevation} />

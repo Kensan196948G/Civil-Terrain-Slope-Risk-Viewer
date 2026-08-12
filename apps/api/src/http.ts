@@ -14,11 +14,12 @@ const CSP_DIRECTIVES = [
   "default-src 'self'",
   "script-src 'self'",
   // SPA inline styles from Vite/Maplibre; MapLibre uses inline style for canvas
-  "style-src 'self' 'unsafe-inline'",
+  // Google Fonts stylesheet (IBM Plex Sans JP / Mono) も許可する
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // MapLibre worker blob, GSI tiles, fonts
   "img-src 'self' data: blob: https://cyberjapandata2.gsi.go.jp https://maps.gsi.go.jp",
   "connect-src 'self' https://cyberjapandata2.gsi.go.jp",
-  "font-src 'self' https://fonts.gstatic.com",
+  "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com",
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",

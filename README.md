@@ -162,7 +162,7 @@ flowchart LR
 - ✅ 単点標高 (Sprint 2): `GET /api/v1/elevation` (GSI DEMタイル→PNG復号→出典・品質付き応答) + クリック→標高パネル (欠損・判定不能に「安全を意味しない」を常記)
 - ✅ 再設計100%適用 (PR #27): 5タブUI・地点検索 (地名/緯度経度)・選択地点マーカー・DEM状態表示・出力タブ
 - ✅ 分析3タブ本番実装 (PR #28): 地形分析 (Horn傾斜統計 30°=急傾斜地法基準 + TPI地形分類)・断面分析 (2点指定→縦断プロファイル、欠損非補間)・確認支援 (実測メトリクスのルール評価)。GSI DEM実データのクライアントサイド解析、検索リセット付き
-- ✅ 評価改善 (2026-08-12): APIレート制限 (429+Retry-After) / Cloudflare Access JWTのWorker側検証 (設定時のみ) / `GET /capabilities`・`GET /sources` 実装 / レポート出力 (Markdown・CSV・JSON、クライアントサイド保存、出典・判定不能を明記) / テストカバレッジ80%ゲート (実測93%) / コード分割 (初期JS 1.26MB→約205KB、MapLibreは遅延読み込み) / スキップリンク・prefers-reduced-motion・タッチターゲット44px等のアクセシビリティ改善
+- ✅ 評価改善 (2026-08-12): APIレート制限 (429+Retry-After) / Cloudflare Access JWTのWorker側検証 (設定時のみ) / `GET /capabilities`・`GET /sources` 実装 / レポート出力 (Markdown・CSV・JSON、クライアントサイド保存、出典・判定不能を明記) / テストカバレッジ80%ゲート (実測93%) / コード分割 (初期JS 1.26MB→約205KB、MapLibreは遅延読み込み) / スキップリンク・prefers-reduced-motion・タッチターゲット44px等のアクセシビリティ改善 / WebGL不可環境でも地図以外を継続利用できるエラーバウンダリ / CSP meta廃止とGoogle Fonts許可 (開発・E2E互換の欠陥修正)
 - 🚧 既知の制約: `GET /api/v1/health/ready` は503 (Neon未接続の正直な報告。DB利用機能はSprint 3+)。E2Eはローカル実行環境でheadless Chromeが起動できないためCI依存 (GitHubリポジトリ復旧後に実行)
 - ⬜ UAT・Neon接続 (Sprint 3+)・分析結果のサーバー保存・E2E拡充
 
