@@ -1,6 +1,6 @@
 {
   "name": "civil-terrain-slope-risk-viewer",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "license": "UNLICENSED",
@@ -19,7 +19,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
     "build": "pnpm -r run build",
-    "deploy": "pnpm --filter ./apps/web run build && pnpm --filter ./apps/api exec wrangler deploy",
+    "deploy:prod": "pnpm --filter ./apps/web run build && pnpm --filter ./apps/api exec wrangler deploy",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "fixtures:generate": "node --experimental-strip-types tests/fixtures/generate/generate.ts",

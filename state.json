@@ -7,7 +7,7 @@
   },
   "goal": "v0.2.0 本番リリース完了。次Goal: 総合評価・改善 (2026-08-12) の適用と再評価、GitHubリポジトリ復旧後のPR/CI、Neon接続(Sprint 3+)、UAT",
   "phase": "Stabilize",
-  "resume_point": "2026-08-12評価改善: レポート出力(MD/CSV/JSON)・Rate Limit・Access JWT検証・capabilities/sources・カバレッジ80%ゲート・コード分割・a11y改善を実装し、lint/typecheck/test(329)/coverage(93%)/build/wrangler dry-run PASS。未コミット (GitHubリポジトリが404のためpush/PR不可)。E2Eはローカルheadless Chrome制約でNOT RUN。残: GitHub復旧→commit/push/PR→CI→デプロイ、Neon接続(Sprint 3+)、UAT",
+  "resume_point": "v0.2.1本番稼働 (2026-08-12)。評価改善をPR #1でマージ (merge commit 7877f30) し、CI (E2E 8/8含む)・gitleaks・semgrep全PASS後にデプロイ (Version 18555d03-9148-4e13-b1eb-c1da93f83594)。GitHubリポジトリは再作成済み。残: RBAC・監査ログ・Neon接続(Sprint 3+)・監視アラート・負荷テスト・ライセンス決定・UAT",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
@@ -31,16 +31,16 @@
     "topology": "unified-worker-static-assets",
     "production_url": "https://terrain-slope.mirai-dx-platform.com",
     "worker": "civil-terrain-api",
-    "version_id": "5a58a131-1cdc-43f7-b3b0-e2696dd192d1",
-    "release": "v0.2.0",
-    "commit": "8d00625 (v0.2.0=93b8ea8 + custom domain PR #30/#31)",
-    "deployed_at": "2026-07-24T06:20:00Z",
+    "version_id": "18555d03-9148-4e13-b1eb-c1da93f83594",
+    "release": "v0.2.1",
+    "commit": "7877f30 (PR #1 squash merge)",
+    "deployed_at": "2026-08-12T03:49:12Z",
     "custom_domain": "terrain-slope.mirai-dx-platform.com (ユーザー指定 2026-07-24、Workers Custom Domain。workers.dev は既定で無効化され正規URLへ一本化)",
     "neon_provisioning": "deferred-to-sprint-3+ (それまで /health/ready は DB未接続を503で正しく表明)",
     "secrets_required_for_mvp": false,
     "rollback": "初回デプロイのため旧版なし。障害時は修正版再デプロイまたはWorker無効化。以後は `pnpm --filter ./apps/api exec wrangler rollback`",
     "human_run": true,
-    "note": "2026-07-24 /goal実行承認により初回本番デプロイ。その後ユーザー指定でカスタムドメイン割当 (PR #30 routes位置バグ→PR #31修正)。smoke test PASS (health/ready 503は想定)。observability有効"
+    "note": "2026-08-12: ユーザー承認 (Y) により評価改善をマージ・デプロイ。Accessゲート維持をスモーク確認。observability有効。smoke testはAccess認証が壁のため、curlでは302 (Accessログイン) とデプロイ履歴のみ確認。認証セッションでの画面確認はユーザー側で実施"
   },
   "completed_issues": [
     {
