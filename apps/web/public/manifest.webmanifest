@@ -1,0 +1,25 @@
+{
+  "name": "Civil Terrain & Slope Risk Viewer",
+  "short_name": "Terrain Risk",
+  "description": "公開地形データから工事候補地の標高・傾斜・地形分類を可視化する初期確認支援ツール",
+  "lang": "ja",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e08a2b",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

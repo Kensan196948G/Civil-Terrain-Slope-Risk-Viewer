@@ -28,6 +28,13 @@ describe("LayerSwitcher", () => {
 
     expect(screen.getByRole("checkbox", { name: "傾斜量図" })).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: "陰影起伏図" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "土砂災害警戒区域（土石流）" })).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "土砂災害警戒区域（急傾斜地の崩壊）" }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "土砂災害警戒区域（地すべり）" }),
+    ).not.toBeChecked();
   });
 
   it("notifies base selection changes", () => {

@@ -6,7 +6,7 @@
  * からのクライアントサイド解析)、出力・共有 (共有URL + MD/CSV/JSON レポート)。
  */
 
-export type TabId = "map" | "terrain" | "cross-section" | "confirm" | "output";
+export type TabId = "map" | "terrain" | "cross-section" | "confirm" | "output" | "history";
 
 export interface TabDef {
   readonly id: TabId;
@@ -53,6 +53,13 @@ export const TABS: readonly TabDef[] = [
     label: "出力・共有",
     topbarSub: "共有URL",
     context: "表示状態の共有URLと、解析結果のレポート (Markdown/CSV/JSON) を出力できます。",
+  },
+  {
+    id: "history",
+    icon: "🗂️",
+    label: "履歴",
+    topbarSub: "分析履歴と比較",
+    context: "ブラウザ内に保存した分析結果の一覧・削除と、2地点の項目別比較を行います。",
   },
 ];
 

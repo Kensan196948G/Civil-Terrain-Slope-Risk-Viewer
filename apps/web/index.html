@@ -6,6 +6,10 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- SVG favicon 非対応・キャッシュ固着ブラウザ向けの ICO フォールバック -->
     <link rel="alternate icon" type="image/x-icon" sizes="32x32" href="/favicon.ico" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Terrain Risk" />
     <meta name="theme-color" content="#e08a2b" />
     <!-- CSP は本番応答ヘッダー (apps/api/src/http.ts) で付与する。
          meta 方式は Vite dev のインライン HMR スクリプトをブロックし、

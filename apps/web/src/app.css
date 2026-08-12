@@ -981,6 +981,184 @@ body {
   font-size: 12.5px;
 }
 
+/* ---- Analysis history tab ------------------------------------------------- */
+
+.history-tab {
+  max-width: 880px;
+}
+
+.history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.history-save-status {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0 4px;
+}
+
+.history-empty p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--subtle);
+}
+
+.history-row-select {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.history-row-select input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.history-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-row-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--mono);
+}
+
+.history-row-meta {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.history-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.history-compare-note {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.history-compare {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.history-compare-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.history-compare-head h5 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 8px 10px;
+  border: 1px solid var(--line-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.comparison-table thead th {
+  background: var(--subtle);
+  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.comparison-table tbody th {
+  font-weight: 500;
+  color: var(--ink-2);
+  width: 34%;
+}
+
+.comparison-table tbody td {
+  font-family: var(--mono);
+  color: var(--ink-2);
+}
+
+.comparison-row--diff td {
+  background: var(--amber-bg);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.history-clear {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-2);
+}
+
+.history-clear-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--red);
+}
+
+.history-clear-confirm span {
+  margin-right: 4px;
+}
+
 /* ---- Status badge (packages/ui StatusBadge) ---------------------------
  * Visual spec ported from the redesign's confirmation-support chips.
  * Class names follow the component: status.toLowerCase() (e.g. --check_required). */

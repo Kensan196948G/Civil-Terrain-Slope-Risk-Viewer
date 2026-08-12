@@ -24,6 +24,17 @@ describe("applySecurityHeaders", () => {
     expect(csp.match(/style-src/g)?.length).toBe(1);
   });
 
+  it("allows GSI tiles including the hazard map data host", () => {
+    const csp = applySecurityHeaders(jsonResponse({ ok: true }, 200)).headers.get(
+      "content-security-policy",
+    )!;
+
+    expect(csp).toContain("https://cyberjapandata2.gsi.go.jp");
+    expect(csp).toContain("https://disaportaldata.gsi.go.jp");
+    expect(csp).toContain("img-src 'self' data: blob:");
+    expect(csp).toContain("connect-src 'self'");
+  });
+
   it("does not overwrite headers already set by a route handler", () => {
     const response = new Response("ok", { headers: { "x-content-type-options": "custom" } });
     const wrapped = applySecurityHeaders(response);

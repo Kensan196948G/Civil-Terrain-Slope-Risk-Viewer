@@ -9,7 +9,8 @@ import type { StyleSpecification } from "maplibre-gl";
  */
 
 export type BaseLayerId = "std" | "pale" | "photo";
-export type OverlayLayerId = "slope" | "hillshade";
+export type OverlayLayerId =
+  "slope" | "hillshade" | "sabo-debris" | "sabo-steep" | "sabo-landslide";
 export type MapLayerId = BaseLayerId | OverlayLayerId;
 
 export interface TileLayerDefinition<Id extends MapLayerId = MapLayerId> {
@@ -28,6 +29,14 @@ export interface TileLayerDefinition<Id extends MapLayerId = MapLayerId> {
 
 const GSI_ATTRIBUTION =
   '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>';
+
+/**
+ * 重ねるハザードマップ (国土地理院オープンデータ) の帰属。
+ * 出典: https://disaportal.gsi.go.jp/hazardmap/copyright/opendata.html
+ * 原データ: 国土数値情報「土砂災害警戒区域 (令和7年度)」 (国土交通省)。
+ */
+const HAZARD_ATTRIBUTION =
+  '<a href="https://disaportal.gsi.go.jp/hazardmap/copyright/opendata.html" target="_blank" rel="noopener">国土地理院「重ねるハザードマップ」</a>';
 
 export const BASE_LAYERS: readonly TileLayerDefinition<BaseLayerId>[] = [
   {
@@ -83,6 +92,40 @@ export const OVERLAY_LAYERS: readonly TileLayerDefinition<OverlayLayerId>[] = [
     maxZoom: 16,
     attribution: GSI_ATTRIBUTION,
     opacity: 0.5,
+  },
+  {
+    id: "sabo-debris",
+    label: "土砂災害警戒区域（土石流）",
+    kind: "overlay",
+    tileUrlTemplate:
+      "https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png",
+    minZoom: 2,
+    maxZoom: 17,
+    attribution: HAZARD_ATTRIBUTION,
+    // ベース地図との重なりを見るため半透明に保つ (数値評価は行わない表示専用レイヤー)。
+    opacity: 0.6,
+  },
+  {
+    id: "sabo-steep",
+    label: "土砂災害警戒区域（急傾斜地の崩壊）",
+    kind: "overlay",
+    tileUrlTemplate:
+      "https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png",
+    minZoom: 2,
+    maxZoom: 17,
+    attribution: HAZARD_ATTRIBUTION,
+    opacity: 0.6,
+  },
+  {
+    id: "sabo-landslide",
+    label: "土砂災害警戒区域（地すべり）",
+    kind: "overlay",
+    tileUrlTemplate:
+      "https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png",
+    minZoom: 2,
+    maxZoom: 17,
+    attribution: HAZARD_ATTRIBUTION,
+    opacity: 0.6,
   },
 ];
 
