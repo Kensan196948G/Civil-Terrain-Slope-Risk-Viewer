@@ -109,3 +109,51 @@ describe("route guards: Cloudflare Access JWT", () => {
     expect(response.status).toBe(200);
   });
 });
+
+describe("route guards: RBAC", () => {
+  const okClaims = {
+    sub: "user:1",
+    email: "test@example.com",
+    name: "Test",
+    aud: "aud",
+    exp: 1,
+    iat: 0,
+    iss: "https://example.cloudflareaccess.com",
+    groups: [] as readonly string[],
+  };
+
+  it("allows a viewer on viewer-level routes", async () => {
+    const response = await route(makeContext("/api/v1/health/ready"), {
+      accessVerify: async () => ({ ok: true, claims: okClaims }),
+      resolveRole: () => "viewer",
+    });
+
+    // 認証・RBACを通過し、DB未設定の本来の応答 (503) に到達する。
+    expect(response.status).toBe(503);
+  });
+
+  it("emits an audit event for allowed requests on protected routes", async () => {
+    const events: Array<{ outcome: string; role?: string; path: string; status?: number }> = [];
+    const response = await route(makeContext("/api/v1/health/ready"), {
+      accessVerify: async () => ({ ok: true, claims: okClaims }),
+      resolveRole: () => "viewer",
+      audit: (event) => events.push(event),
+    });
+
+    expect(response.status).toBe(503);
+    expect(events[0]?.outcome).toBe("allowed");
+    expect(events[0]?.path).toBe("/health/ready");
+    expect(events[0]?.status).toBe(503);
+  });
+
+  it("audits a path without the query string (coordinates stay out of logs)", async () => {
+    const events: Array<{ outcome: string; path: string }> = [];
+    await route(makeContext("/api/v1/health/live?foo=bar"), {
+      rateLimit: () => ({ allowed: false, retryAfterSec: 5 }),
+      audit: (event) => events.push(event),
+    });
+
+    expect(events[0]?.path).toBe("/health/live");
+    expect(events[0]?.path).not.toContain("foo=bar");
+  });
+});

@@ -1,0 +1,10 @@
+# 負荷テスト専用の一時 Worker 設定 (2026-08-12 検証)。
+# 本番 Worker (civil-terrain-api) には影響しない: カスタムドメイン routes なし・
+# 別名デプロイ。テスト後に `wrangler delete --name civil-terrain-api-loadtest`
+# で削除すること (tests/load/README.md 参照)。
+name = "civil-terrain-api-loadtest"
+main = "src/index.ts"
+compatibility_date = "2025-11-01"
+
+[observability]
+enabled = true

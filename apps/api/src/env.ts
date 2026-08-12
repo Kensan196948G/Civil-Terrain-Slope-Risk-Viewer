@@ -16,6 +16,12 @@ export interface Env {
   readonly HYPERDRIVE?: Hyperdrive;
   readonly CF_ACCESS_TEAM_DOMAIN?: string;
   readonly CF_ACCESS_AUD?: string;
+  /** Analyst 以上に与える Cloudflare Access Group ID (カンマ区切り)。 */
+  readonly CF_ACCESS_ANALYST_GROUPS?: string;
+  /** DataAdmin 以上に与える Cloudflare Access Group ID (カンマ区切り)。 */
+  readonly CF_ACCESS_DATA_ADMIN_GROUPS?: string;
+  /** SystemAdmin に与える Cloudflare Access Group ID (カンマ区切り)。 */
+  readonly CF_ACCESS_ADMIN_GROUPS?: string;
   /** 分あたりのAPIリクエスト上限 (クライアントIP単位)。未設定時は 120。 */
   readonly RATE_LIMIT_PER_MINUTE?: string;
 }
