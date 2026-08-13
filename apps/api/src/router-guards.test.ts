@@ -108,6 +108,25 @@ describe("route guards: Cloudflare Access JWT", () => {
 
     expect(response.status).toBe(200);
   });
+
+  it("fails closed on protected routes when Access configuration is incomplete", async () => {
+    const response = await route(makeContext("/api/v1/elevation?lat=35&lon=139"), {
+      accessConfigError: "CF_ACCESS_TEAM_DOMAIN と CF_ACCESS_AUD は両方設定してください。",
+    });
+
+    expect(response.status).toBe(503);
+    const body = (await response.json()) as { code: string; detail: string };
+    expect(body.code).toBe("UPSTREAM_UNAVAILABLE");
+    expect(body.detail).toContain("CF_ACCESS_TEAM_DOMAIN");
+  });
+
+  it("still allows public routes when Access configuration is incomplete", async () => {
+    const response = await route(makeContext("/api/v1/capabilities"), {
+      accessConfigError: "CF_ACCESS_TEAM_DOMAIN と CF_ACCESS_AUD は両方設定してください。",
+    });
+
+    expect(response.status).toBe(200);
+  });
 });
 
 describe("route guards: RBAC", () => {

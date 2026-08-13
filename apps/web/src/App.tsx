@@ -7,6 +7,7 @@ import { DemMetaCards } from "./elevation/DemMetaCards";
 import { ElevationPanel } from "./elevation/ElevationPanel";
 import type { ElevationPanelState } from "./elevation/ElevationPanel";
 import { fetchElevation } from "./elevation/elevation-client";
+import { DEMO_ANALYSES } from "./demo/demo-analyses";
 import { LayerSwitcher } from "./map/LayerSwitcher";
 import { MapErrorBoundary } from "./map/MapErrorBoundary";
 import type { MapFocusRequest, SectionLineState } from "./map/MapView";
@@ -279,7 +280,9 @@ export function App(): ReactElement {
 
   const handleLoadHistoryItem = useCallback(
     (id: string) => {
-      const item = historyItems.find((candidate) => candidate.id === id);
+      const item =
+        historyItems.find((candidate) => candidate.id === id) ??
+        DEMO_ANALYSES.find((candidate) => candidate.id === id);
       if (item === undefined) {
         return;
       }
@@ -575,6 +578,7 @@ export function App(): ReactElement {
           {activeTab === "history" ? (
             <HistoryTab
               items={historyItems}
+              demoItems={DEMO_ANALYSES}
               current={currentAnalysis}
               saveStatus={historySaveStatus}
               onSaveCurrent={handleSaveCurrent}

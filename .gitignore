@@ -33,3 +33,6 @@ pnpm-debug.log*
 
 # Reports (generated, not source of truth)
 reports/
+
+# Local agent/session metadata
+.omo/

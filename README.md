@@ -31,7 +31,7 @@ flowchart LR
 | ⚠️ 確認支援       | 要確認・参考情報・判定不能の根拠付きカード                                        | ✅ v0.2.0実装済 (実測メトリクスのルール評価)        |
 | 🧾 共有・出力     | 共有URL、Markdown、CSV、JSON                                                      | ✅ 共有URL + MD/CSV/JSON レポート出力 (v0.2.1)      |
 | 🔎 品質表示       | 出典、取得日時、解像度、欠損率、加工方法                                          | ✅ v0.2.0実装済 (グレード・欠損率・出典)            |
-| 🗂️ 分析履歴       | ブラウザ内保存・一覧・削除・2地点比較                                             | ✅ 追加実装 (localStorage 最大30件・サーバー非送信) |
+| 🗂️ 分析履歴       | ブラウザ内保存・一覧・削除・2地点比較・初回評価用デモサンプル                     | ✅ 追加実装 (localStorage 最大30件・サーバー非送信) |
 | 📱 PWA/オフライン | インストール可能・アプリシェルオフライン                                          | ✅ 追加実装 (API/タイルはキャッシュしない)          |
 
 ## 🚧 重要な利用上の制約
@@ -127,11 +127,11 @@ pnpm format                      # コードスタイル検査
 ```
 
 ```text
-apps/web       React + Vite UI (スケルトン実装済み)
-apps/api       Cloudflare Workers API (スケルトン実装済み)
-packages/*     domain / geo / adapters / db / ui (スケルトン実装済み)
+apps/web       React + Vite UI (MVP実装済み。初回評価用の架空デモ分析3件を同梱)
+apps/api       Cloudflare Workers API (health / elevation / capabilities / sources)
+packages/*     domain / geo / adapters / db / ui
 tests/fixtures 合成ゴールデンDEMデータ (実装済み)
-tests/*        integration / e2e (未着手)
+tests/e2e      Playwright smoke (地図・標高・分析タブ)
 ```
 
 実装開始時の判断基準は [開発開始ガイド](docs/開発開始ガイド.md)、完了条件は [テスト品質戦略](docs/テスト品質戦略.md) を参照してください。
@@ -166,8 +166,8 @@ flowchart LR
 - ✅ 単点標高 (Sprint 2): `GET /api/v1/elevation` (GSI DEMタイル→PNG復号→出典・品質付き応答) + クリック→標高パネル (欠損・判定不能に「安全を意味しない」を常記)
 - ✅ 再設計100%適用 (PR #27): 5タブUI・地点検索 (地名/緯度経度)・選択地点マーカー・DEM状態表示・出力タブ
 - ✅ 分析3タブ本番実装 (PR #28): 地形分析 (Horn傾斜統計 30°=急傾斜地法基準 + TPI地形分類)・断面分析 (2点指定→縦断プロファイル、欠損非補間)・確認支援 (実測メトリクスのルール評価)。GSI DEM実データのクライアントサイド解析、検索リセット付き
-- ✅ 評価改善 (2026-08-12): APIレート制限 (429+Retry-After) / Cloudflare Access JWTのWorker側検証 (設定時のみ) / `GET /capabilities`・`GET /sources` 実装 / レポート出力 (Markdown・CSV・JSON、クライアントサイド保存、出典・判定不能を明記) / テストカバレッジ80%ゲート (実測93%) / コード分割 (初期JS 1.26MB→約205KB、MapLibreは遅延読み込み) / スキップリンク・prefers-reduced-motion・タッチターゲット44px等のアクセシビリティ改善 / WebGL不可環境でも地図以外を継続利用できるエラーバウンダリ / CSP meta廃止とGoogle Fonts許可 (開発・E2E互換の欠陥修正)
-- ✅ 追加実装 (2026-08-12 第2弾): 重ねるハザードマップ「土砂災害警戒区域」3種 (土石流/急傾斜地/地すべり) の重畳 (CSP・E2E対応込み) / 分析履歴 (localStorage・一覧・開く・削除・2地点比較) / PWA (manifest・アイコン生成・Service Worker。API・外部タイルはキャッシュしない) / ライセンス方針・AI支援機能設計書
+- ✅ 評価改善 (2026-08-12): APIレート制限 (429+Retry-After) / Cloudflare Access JWTのWorker側検証 (設定時のみ。片方欠け設定は保護ルート503) / `GET /capabilities`・`GET /sources` 実装 / レポート出力 (Markdown・CSV・JSON、クライアントサイド保存、出典・判定不能を明記) / テストカバレッジ80%ゲート (実測93%) / コード分割 (初期JS 1.26MB→約205KB、MapLibreは遅延読み込み) / スキップリンク・prefers-reduced-motion・タッチターゲット44px等のアクセシビリティ改善 / WebGL不可環境でも地図以外を継続利用できるエラーバウンダリ / CSP meta廃止とGoogle Fonts許可 (開発・E2E互換の欠陥修正)
+- ✅ 追加実装 (2026-08-12 第2弾 + 2026-08-13 MVPデモ): 重ねるハザードマップ「土砂災害警戒区域」3種 (土石流/急傾斜地/地すべり) の重畳 (CSP・E2E対応込み) / 分析履歴 (localStorage・一覧・開く・削除・2地点比較) / 初回評価用の架空デモ分析3件 / PWA (manifest・アイコン生成・Service Worker。API・外部タイルはキャッシュしない) / ライセンス方針・AI支援機能設計書
 - ✅ v0.3.0 リリース (2026-08-12): PR #4 マージ → CI全成功 (E2E 9/9) → 本番デプロイ (Version `8437425b-83eb-460b-9e0f-3482aad6bac6`) → タグ v0.3.0 / GitHub Release 作成
 - 🚧 既知の制約: `GET /api/v1/health/ready` は503 (Neon未接続の正直な報告。DB利用機能はSprint 3+)。E2Eはローカル実行環境でheadless Chromeが起動できないためCI依存 (2026-08-12 PR #4 CIで9/9 PASS)。Access Group は未作成 (RBAC本番有効化待ち)。Neon はプラン上限のためプロビジョニング待ち
 - ⬜ 残: Access Group作成・secret登録 / 本番スモーク15項目・実機UAT / Neon接続 / アラート作成 (通知API権限待ち) / 監査ログDB永続化 / グローバルRate Limiting / AI支援パイロット (予算承認後)

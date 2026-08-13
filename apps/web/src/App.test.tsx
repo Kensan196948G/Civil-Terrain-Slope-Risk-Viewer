@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { App } from "./App";
 import { fetchElevation } from "./elevation/elevation-client";
 import type { ElevationResult } from "./elevation/elevation-client";
@@ -293,8 +293,30 @@ describe("App", () => {
     fireEvent.click(saveButton);
 
     expect(screen.getByText(/緯度 35.10000 \/ 経度 138.10000/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "開く" }));
+    const savedRow = screen.getByText(/緯度 35.10000 \/ 経度 138.10000/).closest("li");
+    expect(savedRow).not.toBeNull();
+    fireEvent.click(
+      within(savedRow as HTMLElement).getByRole("button", {
+        name: "開く",
+      }),
+    );
     expect(await screen.findByText(/この範囲の DEM データはありません/)).toBeInTheDocument();
+  });
+
+  it("opens bundled demo analyses without writing them to browser history", async () => {
+    await renderApp();
+
+    fireEvent.click(screen.getByRole("button", { name: "履歴" }));
+    expect(screen.getByRole("heading", { name: "デモサンプル (3件)" })).toBeInTheDocument();
+    expect(screen.getByText("デモ: 架空ヤードA")).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "開く" })[0]!);
+    expect(await screen.findByText(/平均傾斜/)).toBeInTheDocument();
+    expect(screen.getByText("8.6°")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "出力・共有" }));
+    expect(screen.getByRole("button", { name: "レポート出力 (Markdown)" })).toBeEnabled();
+    expect(window.localStorage.getItem("civil-terrain.analysis-history.v1")).toBeNull();
   });
 
   it("リセット clears the selection and flies back to the pre-search view", async () => {

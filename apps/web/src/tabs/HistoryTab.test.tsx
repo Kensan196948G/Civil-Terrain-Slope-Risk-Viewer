@@ -112,6 +112,29 @@ describe("HistoryTab", () => {
     expect(onGoToMap).toHaveBeenCalledTimes(1);
   });
 
+  it("shows read-only demo analyses even when browser history is empty", () => {
+    const demo = item("demo-a", { lat: 35.36, lon: 138.72 }, "2026-08-13T00:00:00Z");
+    const { onLoad } = renderTab({
+      demoItems: [
+        {
+          ...demo,
+          label: "デモ: 架空ヤードA",
+          scenario: "初回評価用の架空サンプルです。",
+          demo: true,
+        },
+      ],
+    });
+
+    expect(screen.getByText("保存された分析はまだありません。")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "デモサンプル (1件)" })).toBeInTheDocument();
+    expect(screen.getByText("デモ: 架空ヤードA")).toBeInTheDocument();
+    expect(screen.getByText("初回評価用の架空サンプルです。")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "開く" }));
+    expect(onLoad).toHaveBeenCalledWith("demo-a");
+    expect(screen.queryByRole("button", { name: "削除" })).not.toBeInTheDocument();
+  });
+
   it("enables the save button when a completed analysis exists", () => {
     const { onSaveCurrent } = renderTab({ current: snapshot() });
 
@@ -151,6 +174,26 @@ describe("HistoryTab", () => {
     expect(screen.getByRole("region", { name: "2地点の比較" })).toBeInTheDocument();
     expect(screen.getByRole("table")).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "12.3°" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "18.7°" })).toBeInTheDocument();
+  });
+
+  it("compares saved and demo analyses in the shared comparison table", () => {
+    const saved = item("saved-a", { lat: 35.1, lon: 138.1 }, "2026-08-12T01:00:00Z");
+    const demo = item("demo-b", { lat: 36.2, lon: 139.3 }, "2026-08-13T02:00:00Z", {
+      meanDeg: 18.7,
+      maxDeg: 42.5,
+      steepRatio: 0.42,
+    });
+    renderTab({
+      items: [saved],
+      demoItems: [{ ...demo, label: "デモ: 架空搬入路B", demo: true }],
+    });
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /比較対象に選択: 緯度 35.10000/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /比較対象に選択: デモ: 架空搬入路B/ }));
+
+    expect(screen.getByRole("region", { name: "2地点の比較" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "デモ: 架空搬入路B" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "18.7°" })).toBeInTheDocument();
   });
 

@@ -9,7 +9,8 @@
  * 登録する前提)。
  *
  * 検証手順:
- * 1. Authorization: Bearer <JWT> からトークンを取り出す
+ * 1. Cf-Access-Jwt-Assertion (Cloudflare標準) または
+ *    Authorization: Bearer <JWT> からトークンを取り出す
  * 2. https://<teamDomain>/cdn-cgi/access/certs から kid 対応の公開鍵を取得
  *    (TTL キャッシュ付き)
  * 3. 署名を RS256 で検証し、exp / aud を検査する
@@ -98,6 +99,11 @@ function decodeJsonPart<T>(part: string): T | null {
 }
 
 function tokenFromRequest(request: Request): string | null {
+  const accessHeader = request.headers.get("cf-access-jwt-assertion")?.trim();
+  if (accessHeader !== undefined && accessHeader !== "") {
+    return accessHeader;
+  }
+
   const header = request.headers.get("authorization");
   if (header === null) {
     return null;
@@ -227,7 +233,7 @@ export function createAccessJwtVerifier(options: AccessJwtVerifierOptions): Acce
   return { verify: verifyToken };
 }
 
-/** Authorization ヘッダーから Bearer トークンを取り出す (ルーター側で使用)。 */
-export function extractBearerToken(request: Request): string | null {
+/** Cloudflare Access JWT をリクエストヘッダーから取り出す (ルーター側で使用)。 */
+export function extractAccessToken(request: Request): string | null {
   return tokenFromRequest(request);
 }

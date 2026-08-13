@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createAccessJwtVerifier,
-  extractBearerToken,
+  extractAccessToken,
   type AccessJwtVerifierOptions,
 } from "./access-auth.js";
 
@@ -228,20 +228,31 @@ describe("createAccessJwtVerifier", () => {
   });
 });
 
-describe("extractBearerToken", () => {
-  it("extracts a Bearer token from the Authorization header", () => {
+describe("extractAccessToken", () => {
+  it("prefers the Cloudflare Access assertion header", () => {
+    const request = new Request("https://example.com/api", {
+      headers: {
+        "cf-access-jwt-assertion": "cf.jwt.token",
+        authorization: "Bearer bearer.jwt.token",
+      },
+    });
+
+    expect(extractAccessToken(request)).toBe("cf.jwt.token");
+  });
+
+  it("extracts a Bearer token from the Authorization header as a fallback", () => {
     const request = new Request("https://example.com/api", {
       headers: { authorization: "Bearer abc.def.ghi" },
     });
 
-    expect(extractBearerToken(request)).toBe("abc.def.ghi");
+    expect(extractAccessToken(request)).toBe("abc.def.ghi");
   });
 
   it("returns null when the header is absent or not Bearer", () => {
-    expect(extractBearerToken(new Request("https://example.com/api"))).toBeNull();
+    expect(extractAccessToken(new Request("https://example.com/api"))).toBeNull();
     const basic = new Request("https://example.com/api", {
       headers: { authorization: "Basic dXNlcjpwYXNz" },
     });
-    expect(extractBearerToken(basic)).toBeNull();
+    expect(extractAccessToken(basic)).toBeNull();
   });
 });

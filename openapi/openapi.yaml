@@ -417,6 +417,10 @@ components:
       name: Cf-Access-Jwt-Assertion
       description: |
         Cloudflare AccessがWorkerへ転送する検証済みJWT。
+        Worker実装はこの標準ヘッダーを優先し、ローカル検証用に
+        Authorization: Bearer もフォールバックとして受け付ける。
+        CF_ACCESS_TEAM_DOMAIN / CF_ACCESS_AUD の片方欠けは設定ミスとして
+        保護対象ルートを503で停止する。
         ロール (Anonymous/Viewer/Analyst/DataAdmin/SystemAdmin) はJWTクレームから
         内部ユーザーIDへ不可逆・安定マッピングした上でAPI側が強制する。
 
