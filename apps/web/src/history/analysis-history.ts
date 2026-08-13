@@ -34,6 +34,9 @@ export interface AnalysisSnapshot {
 export interface SavedAnalysis extends AnalysisSnapshot {
   readonly id: string;
   readonly savedAt: string;
+  readonly label?: string;
+  readonly scenario?: string;
+  readonly demo?: boolean;
 }
 
 export interface HistoryStorage {
@@ -65,6 +68,9 @@ function isValidSavedAnalysis(value: unknown): value is SavedAnalysis {
     isRecord(value) &&
     typeof value.id === "string" &&
     typeof value.savedAt === "string" &&
+    (value.label === undefined || typeof value.label === "string") &&
+    (value.scenario === undefined || typeof value.scenario === "string") &&
+    (value.demo === undefined || typeof value.demo === "boolean") &&
     isCoordinate(value.coordinate) &&
     isRecord(value.elevation) &&
     typeof value.elevation.kind === "string"

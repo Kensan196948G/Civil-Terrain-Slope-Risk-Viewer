@@ -1035,6 +1035,11 @@ body {
   background: var(--subtle);
 }
 
+.history-row--demo {
+  background: var(--blue-bg);
+  border-color: rgba(49, 103, 174, 0.2);
+}
+
 .history-row-select {
   display: flex;
   align-items: center;
@@ -1053,11 +1058,13 @@ body {
 }
 
 .history-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
-  font-family: var(--mono);
 }
 
 .history-row-meta {
@@ -1065,6 +1072,27 @@ body {
   font-size: 11.5px;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.history-row-scenario {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.history-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--blue);
+  border: 1px solid rgba(49, 103, 174, 0.22);
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .history-row-actions {

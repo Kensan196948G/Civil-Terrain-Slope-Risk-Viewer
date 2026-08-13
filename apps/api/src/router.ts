@@ -4,7 +4,7 @@ import { handleElevation } from "./routes/elevation.js";
 import { handleCapabilities } from "./routes/capabilities.js";
 import { handleSources } from "./routes/sources.js";
 import { handleHealthLive, handleHealthReady } from "./routes/health.js";
-import { extractBearerToken } from "./security/access-auth.js";
+import { extractAccessToken } from "./security/access-auth.js";
 import type { AccessAuthResult, AccessClaims } from "./security/access-auth.js";
 import { hasRole } from "./security/rbac.js";
 import type { Role } from "./security/rbac.js";
@@ -38,6 +38,7 @@ interface Route {
 /** ルート処理に注入できる依存 (テストは実物を差し替えられる)。 */
 export interface RouterDeps {
   readonly rateLimit?: (key: string) => RateLimitDecision;
+  readonly accessConfigError?: string;
   readonly accessVerify?: (token: string | null) => Promise<AccessAuthResult>;
   /** JWT claims からロールを解決する (認証有効時のみ使用)。 */
   readonly resolveRole?: (claims: AccessClaims) => Role;
@@ -116,8 +117,24 @@ export async function route(context: RequestContext, deps: RouterDeps = {}): Pro
   // 2) Cloudflare Access JWT の Worker 側検証 (設定時のみ有効)。
   //    公開ルート (openapi security: []) と未設定時は従来どおり通過する。
   const accessVerify = deps.accessVerify;
+  if (deps.accessConfigError !== undefined && !PUBLIC_PATHS.has(routePath)) {
+    audit({
+      event: "access",
+      requestId,
+      method: request.method,
+      path: routePath,
+      outcome: "error",
+      status: 503,
+    });
+    return problemResponse("UPSTREAM_UNAVAILABLE", "認証設定が完了していません。", {
+      detail: deps.accessConfigError,
+      instance: url.pathname,
+      requestId,
+    });
+  }
+
   if (accessVerify !== undefined && !PUBLIC_PATHS.has(routePath)) {
-    const result = await accessVerify(extractBearerToken(request));
+    const result = await accessVerify(extractAccessToken(request));
     if (!result.ok) {
       audit({
         event: "access",

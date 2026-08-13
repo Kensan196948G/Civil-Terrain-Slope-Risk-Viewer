@@ -4,6 +4,11 @@ import { buildRouterDeps, route } from "./router.js";
 import { createAccessJwtVerifier } from "./security/access-auth.js";
 import type { AccessJwtVerifier } from "./security/access-auth.js";
 
+type AccessVerifierConfig =
+  | { readonly kind: "disabled" }
+  | { readonly kind: "enabled"; readonly verifier: AccessJwtVerifier }
+  | { readonly kind: "error"; readonly detail: string };
+
 /**
  * Worker entry point. A single top-level try/catch guarantees that every
  * failure path returns a Problem Details response instead of leaking a raw
@@ -18,12 +23,14 @@ export default {
     try {
       const url = new URL(request.url);
       const deps = buildRouterDeps(env);
-      const accessVerifier = buildAccessVerifier(env);
+      const accessVerifier = buildAccessVerifierConfig(env);
       const response = await route(
         { request, env, ctx, url, requestId },
-        accessVerifier === null
-          ? deps
-          : { ...deps, accessVerify: (token) => accessVerifier.verify(token) },
+        accessVerifier.kind === "enabled"
+          ? { ...deps, accessVerify: (token) => accessVerifier.verifier.verify(token) }
+          : accessVerifier.kind === "error"
+            ? { ...deps, accessConfigError: accessVerifier.detail }
+            : deps,
       );
       return applySecurityHeaders(response);
     } catch (error) {
@@ -42,19 +49,20 @@ export default {
 
 /**
  * CF_ACCESS_TEAM_DOMAIN / CF_ACCESS_AUD の両方が設定されている場合のみ JWT
- * 検証器を返す。片方欠けは設定ミスの可能性が高いが、ロックアウトを避けるため
- * 未設定扱いとし、ログで検出できるようにする。
+ * 検証器を返す。片方欠けは設定ミスとして保護ルートを fail-closed にする。
  */
-function buildAccessVerifier(env: Env): AccessJwtVerifier | null {
+export function buildAccessVerifierConfig(env: Env): AccessVerifierConfig {
   const teamDomain = env.CF_ACCESS_TEAM_DOMAIN;
   const audience = env.CF_ACCESS_AUD;
   if (teamDomain === undefined || audience === undefined) {
     if (teamDomain !== undefined || audience !== undefined) {
-      console.error(
-        "CF_ACCESS_TEAM_DOMAIN / CF_ACCESS_AUD は両方設定してください。JWT検証を無効化します。",
-      );
+      console.error("CF_ACCESS_TEAM_DOMAIN / CF_ACCESS_AUD は両方設定してください。");
+      return {
+        kind: "error",
+        detail: "CF_ACCESS_TEAM_DOMAIN と CF_ACCESS_AUD は両方設定してください。",
+      };
     }
-    return null;
+    return { kind: "disabled" };
   }
-  return createAccessJwtVerifier({ teamDomain, audience });
+  return { kind: "enabled", verifier: createAccessJwtVerifier({ teamDomain, audience }) };
 }

@@ -6,6 +6,7 @@ import type { AnalysisSnapshot, SavedAnalysis } from "../history/analysis-histor
 
 export interface HistoryTabProps {
   readonly items: readonly SavedAnalysis[];
+  readonly demoItems?: readonly SavedAnalysis[];
   /** 現在の解析状態。null なら「保存」ボタンを無効化する。 */
   readonly current: AnalysisSnapshot | null;
   readonly saveStatus: "idle" | "saved" | "error";
@@ -38,6 +39,10 @@ function qualityGrade(item: SavedAnalysis): string {
   return item.terrain?.kind === "ok" ? item.terrain.quality.grade : "—";
 }
 
+function itemTitle(item: SavedAnalysis): string {
+  return item.label ?? formatCoordinate(item.coordinate);
+}
+
 const SAVE_LABELS: Record<HistoryTabProps["saveStatus"], string> = {
   idle: "地形分析を実行すると保存できます。",
   saved: "現在の分析を保存しました。",
@@ -53,6 +58,7 @@ const SAVE_LABELS: Record<HistoryTabProps["saveStatus"], string> = {
  */
 export function HistoryTab({
   items,
+  demoItems = [],
   current,
   saveStatus,
   onSaveCurrent,
@@ -66,17 +72,18 @@ export function HistoryTab({
   const [compareRejected, setCompareRejected] = useState(false);
 
   const comparison = useMemo(() => {
+    const allItems = [...items, ...demoItems];
     if (selectedIds.length !== 2) {
       return null;
     }
     const [leftId, rightId] = selectedIds;
-    const left = items.find((item) => item.id === leftId);
-    const right = items.find((item) => item.id === rightId);
+    const left = allItems.find((item) => item.id === leftId);
+    const right = allItems.find((item) => item.id === rightId);
     if (left === undefined || right === undefined) {
       return null;
     }
     return { left, right, rows: compareAnalyses(left, right) };
-  }, [items, selectedIds]);
+  }, [items, demoItems, selectedIds]);
 
   const toggleSelection = (id: string): void => {
     setCompareRejected(false);
@@ -96,6 +103,12 @@ export function HistoryTab({
     setSelectedIds([]);
     onClear();
   };
+
+  const compareStatus = compareRejected
+    ? "比較できるのは2件までです。一度チェックを外してから選び直してください。"
+    : comparison !== null
+      ? "2件を選択中です。下の表で比較できます。"
+      : "2件チェックすると、下に比較表が表示されます。";
 
   return (
     <section className="analysis-tab history-tab" aria-label="分析履歴">
@@ -142,13 +155,14 @@ export function HistoryTab({
                       type="checkbox"
                       checked={selectedIds.includes(item.id)}
                       onChange={() => toggleSelection(item.id)}
-                      aria-label={`比較対象に選択: ${formatCoordinate(item.coordinate)}`}
+                      aria-label={`比較対象に選択: ${itemTitle(item)}`}
                     />
                     <span className="visually-hidden">比較対象に選択</span>
                   </label>
                   <div className="history-row-body">
-                    <p className="history-row-title">{formatCoordinate(item.coordinate)}</p>
+                    <p className="history-row-title">{itemTitle(item)}</p>
                     <p className="history-row-meta">
+                      {item.label === undefined ? "" : `${formatCoordinate(item.coordinate)} ・ `}
                       保存: {formatSavedAt(item.savedAt)} ・ {terrainSummary(item)} ・ DEM{" "}
                       {qualityGrade(item)}
                     </p>
@@ -172,61 +186,6 @@ export function HistoryTab({
                 </li>
               ))}
             </ul>
-            <p className="history-compare-note" role="status" aria-live="polite">
-              {compareRejected
-                ? "比較できるのは2件までです。一度チェックを外してから選び直してください。"
-                : comparison !== null
-                  ? "2件を選択中です。下の表で比較できます。"
-                  : "2件チェックすると、下に比較表が表示されます。"}
-            </p>
-            {comparison !== null ? (
-              <div className="history-compare" role="region" aria-label="2地点の比較">
-                <div className="history-compare-head">
-                  <h5>2地点の比較</h5>
-                  <button
-                    type="button"
-                    className="btn btn--small"
-                    onClick={() => {
-                      setSelectedIds([]);
-                      setCompareRejected(false);
-                    }}
-                  >
-                    比較をやめる
-                  </button>
-                </div>
-                <table className="comparison-table">
-                  <caption className="visually-hidden">
-                    保存済み2地点の分析項目の比較 (左:{" "}
-                    {formatCoordinate(comparison.left.coordinate)}
-                    、右: {formatCoordinate(comparison.right.coordinate)})
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">項目</th>
-                      <th scope="col">{formatCoordinate(comparison.left.coordinate)}</th>
-                      <th scope="col">{formatCoordinate(comparison.right.coordinate)}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {comparison.rows.map((row) => (
-                      <tr
-                        key={row.key}
-                        className={row.differs ? "comparison-row--diff" : undefined}
-                      >
-                        <th scope="row">{row.label}</th>
-                        <td>{row.left}</td>
-                        <td>{row.right}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <p className="analysis-card-footnote">
-                  差がある行を強調表示していますが、数値の大小だけで安全・危険を判定しません。
-                  現地調査・専門家確認の要否は別途検討してください。
-                </p>
-              </div>
-            ) : null}
-
             <div className="history-clear">
               {confirmClear ? (
                 <div className="history-clear-confirm" role="alert">
@@ -255,6 +214,95 @@ export function HistoryTab({
           </>
         )}
       </div>
+
+      {demoItems.length > 0 ? (
+        <div className="analysis-card">
+          <div className="analysis-card-header">
+            <h4>デモサンプル ({demoItems.length}件)</h4>
+            <p>架空ダミーデータです。開く・比較・レポート出力の確認に使えます。</p>
+          </div>
+          <ul className="history-list">
+            {demoItems.map((item) => (
+              <li key={item.id} className="history-row history-row--demo">
+                <label className="history-row-select">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(item.id)}
+                    onChange={() => toggleSelection(item.id)}
+                    aria-label={`比較対象に選択: ${itemTitle(item)}`}
+                  />
+                  <span className="visually-hidden">比較対象に選択</span>
+                </label>
+                <div className="history-row-body">
+                  <p className="history-row-title">
+                    {itemTitle(item)}
+                    <span className="history-demo-badge">デモ</span>
+                  </p>
+                  <p className="history-row-meta">
+                    {formatCoordinate(item.coordinate)} ・ {terrainSummary(item)} ・ DEM{" "}
+                    {qualityGrade(item)}
+                  </p>
+                  {item.scenario === undefined ? null : (
+                    <p className="history-row-scenario">{item.scenario}</p>
+                  )}
+                </div>
+                <div className="history-row-actions">
+                  <button type="button" className="btn btn--small" onClick={() => onLoad(item.id)}>
+                    開く
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <p className="history-compare-note" role="status" aria-live="polite">
+        {compareStatus}
+      </p>
+      {comparison !== null ? (
+        <div className="history-compare" role="region" aria-label="2地点の比較">
+          <div className="history-compare-head">
+            <h5>2地点の比較</h5>
+            <button
+              type="button"
+              className="btn btn--small"
+              onClick={() => {
+                setSelectedIds([]);
+                setCompareRejected(false);
+              }}
+            >
+              比較をやめる
+            </button>
+          </div>
+          <table className="comparison-table">
+            <caption className="visually-hidden">
+              保存済み2地点の分析項目の比較 (左: {itemTitle(comparison.left)}、右:{" "}
+              {itemTitle(comparison.right)})
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">項目</th>
+                <th scope="col">{itemTitle(comparison.left)}</th>
+                <th scope="col">{itemTitle(comparison.right)}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparison.rows.map((row) => (
+                <tr key={row.key} className={row.differs ? "comparison-row--diff" : undefined}>
+                  <th scope="row">{row.label}</th>
+                  <td>{row.left}</td>
+                  <td>{row.right}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="analysis-card-footnote">
+            差がある行を強調表示していますが、数値の大小だけで安全・危険を判定しません。
+            現地調査・専門家確認の要否は別途検討してください。
+          </p>
+        </div>
+      ) : null}
 
       <p className="analysis-note analysis-note--unknown" role="note">
         履歴はこのブラウザ内にのみ保存されます。別端末・別ブラウザには引き継がれず、
