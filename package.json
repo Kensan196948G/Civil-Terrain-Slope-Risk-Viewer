@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
     "build": "pnpm -r run build",
+    "deploy:mvp": "pnpm --filter ./apps/web run build && pnpm --filter ./apps/api exec wrangler deploy --env mvp",
     "deploy:prod": "pnpm --filter ./apps/web run build && pnpm --filter ./apps/api exec wrangler deploy",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
