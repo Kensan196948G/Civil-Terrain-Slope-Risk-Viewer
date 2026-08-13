@@ -42,7 +42,8 @@ IT・DX部門 (7名体制で継続運用可能な範囲)。
 
 ## 3. 本番スモークチェックリスト (リリース後・認証セッションで実施)
 
-Access 認証済みブラウザで https://terrain-slope.mirai-dx-platform.com を開き、
+MVP/Prototype確認では Access 認証済みブラウザで https://mvp-slope.mirai-dx-platform.com を開き、
+本番リリース後の確認では https://terrain-slope.mirai-dx-platform.com を開いて、
 以下を確認する (✅ は実施記録欄)。
 
 1. ✅ ログイン後トップが表示され、コンソールエラーが0件

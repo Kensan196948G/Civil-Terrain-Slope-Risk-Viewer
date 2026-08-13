@@ -158,6 +158,7 @@ flowchart LR
 ```
 
 - 🚀 **本番稼働中 (v0.2.0)**: <https://terrain-slope.mirai-dx-platform.com> — 統合Cloudflare Worker (SPA + API 単一オリジン)。カスタムドメイン割当済み (PR #30/#31。workers.dev URL は無効化し正規URLへ一本化)
+- 🧪 **MVP/Prototype確認用URL**: <https://mvp-slope.mirai-dx-platform.com> — 本番URLと誤認しないための評価用サブドメイン。`wrangler --env mvp` で `civil-terrain-api-mvp` へ分離してdeployする
 - ✅ 要件定義書 v1.0.0 / 詳細設計仕様書 v1.0.0 / OpenAPI 3.1初版 (`openapi/openapi.yaml`)
 - ✅ Sprint 0: monorepoスケルトン (`apps/*`, `packages/*`) + ゴールデンfixture (現在291テスト全パス)
 - ✅ CI (`.github/workflows/ci.yml`、Node 22。lint/format/typecheck/test/build/Workers bundle dry-run/E2E smoke/dependency audit)
