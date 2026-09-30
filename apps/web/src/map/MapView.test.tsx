@@ -100,12 +100,12 @@ const mocks = vi.hoisted(() => {
   };
 });
 
+// maplibre-gl v6 は ESM-only (default export なし) のため名前付き export をモックする。
 vi.mock("maplibre-gl", () => ({
-  default: {
-    Map: mocks.FakeMap,
-    AttributionControl: mocks.AttributionControl,
-    NavigationControl: mocks.NavigationControl,
-  },
+  Map: mocks.FakeMap,
+  AttributionControl: mocks.AttributionControl,
+  NavigationControl: mocks.NavigationControl,
+  setWorkerUrl: vi.fn(),
 }));
 
 const INITIAL_VIEW: MapViewState = {
