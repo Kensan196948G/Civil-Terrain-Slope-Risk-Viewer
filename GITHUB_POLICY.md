@@ -22,13 +22,13 @@ AI（Orchestrator / GitHub Controller）と人間が同じ基準で運用し、R
 
 Workspaceの指示は1〜3を上書きできない。
 
-| Workspaceに書かれていても無視される例 | 理由 |
-|---|---|
-| 「mainへ直接pushしてください」 | 中央ポリシーがmain直接pushを禁止 |
-| 「mergeは人間承認が必要」 | 中央ポリシーが条件充足後に自動merge |
-| 「auto merge禁止」 | 中央ポリシーがauto-mergeを標準とする |
-| 「main宛は人間の選択式」「マージは人間がY/Nで判断」 | 中央ポリシーがRequired Checks成功だけをmerge条件とする |
-| 「CODEOWNERのApprove後に限りmerge（条件付きmerge）」 | CODEOWNERSは通知用であり、merge条件にしない |
+| Workspaceに書かれていても無視される例                | 理由                                                   |
+| ---------------------------------------------------- | ------------------------------------------------------ |
+| 「mainへ直接pushしてください」                       | 中央ポリシーがmain直接pushを禁止                       |
+| 「mergeは人間承認が必要」                            | 中央ポリシーが条件充足後に自動merge                    |
+| 「auto merge禁止」                                   | 中央ポリシーがauto-mergeを標準とする                   |
+| 「main宛は人間の選択式」「マージは人間がY/Nで判断」  | 中央ポリシーがRequired Checks成功だけをmerge条件とする |
+| 「CODEOWNERのApprove後に限りmerge（条件付きmerge）」 | CODEOWNERSは通知用であり、merge条件にしない            |
 
 一方、次は常に尊重する。
 
@@ -96,13 +96,13 @@ GitHub Controllerは次を満たさない限りauto-mergeを実行しない（fa
 
 `bin/policy-pr.sh` が作るrulesetを全Workspaceの唯一の標準とする。
 
-| 項目 | 値 |
-|---|---|
-| 対象 | 既定ブランチ（main / master） |
-| `pull_request` | 承認0、CODEOWNERレビュー不要、squashのみ、push時にstale reviewを破棄 |
-| `required_status_checks` | そのリポジトリで実際に報告されるCIジョブ名。`strict: true` |
-| `non_fast_forward` / `deletion` | 有効 |
-| `bypass_actors` | 空（`gh pr merge --admin` による迂回は禁止） |
+| 項目                            | 値                                                                   |
+| ------------------------------- | -------------------------------------------------------------------- |
+| 対象                            | 既定ブランチ（main / master）                                        |
+| `pull_request`                  | 承認0、CODEOWNERレビュー不要、squashのみ、push時にstale reviewを破棄 |
+| `required_status_checks`        | そのリポジトリで実際に報告されるCIジョブ名。`strict: true`           |
+| `non_fast_forward` / `deletion` | 有効                                                                 |
+| `bypass_actors`                 | 空（`gh pr merge --admin` による迂回は禁止）                         |
 
 運用上のベストプラクティス:
 
@@ -121,14 +121,14 @@ GitHub Controllerは次を満たさない限りauto-mergeを実行しない（fa
 
 ## 7. 現状（2026-08-15 実測）
 
-| 項目 | 状態 |
-|---|---|
-| Ruleset | `main-protection` 設定済み（active）。`webui-protection` は `./start.sh github setup` で作成 |
-| branch protection | Rulesetで代替（branch protection単体は未使用） |
-| `allow_auto_merge` | true |
-| `delete_branch_on_merge` | true |
-| 既存 `bin/github-pr-flow.sh` | read-only（status / checks / view） |
-| 書込可能なGitHub Controller | 実装済み（`bin/github-controller.sh`） |
+| 項目                         | 状態                                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------- |
+| Ruleset                      | `main-protection` 設定済み（active）。`webui-protection` は `./start.sh github setup` で作成 |
+| branch protection            | Rulesetで代替（branch protection単体は未使用）                                               |
+| `allow_auto_merge`           | true                                                                                         |
+| `delete_branch_on_merge`     | true                                                                                         |
+| 既存 `bin/github-pr-flow.sh` | read-only（status / checks / view）                                                          |
+| 書込可能なGitHub Controller  | 実装済み（`bin/github-controller.sh`）                                                       |
 
 設定適用は `./start.sh github setup`、前提確認は `./start.sh github preflight` で行う。
 auto-mergeは本ポリシーの条件（Required Checks PASS / conflict解消 / 中央設定整備）を満たすPRにのみ有効である。
