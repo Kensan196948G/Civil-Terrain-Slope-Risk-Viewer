@@ -1,8 +1,12 @@
 import { useEffect, useRef } from "react";
 import type { ReactElement } from "react";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, GeoJSONSourceSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+// maplibre-gl v6 は ESM-only で、バンドラ利用時は worker URL を明示する必要がある
+// (v5→v6 migration guide / Installation: Vite)。`?worker&url` で Vite の worker
+// パイプラインを通し、同一オリジンの自己完結チャンクとして出力する (CSP worker-src self で許可)。
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { applyLayerSelection, buildMapStyle } from "./layers";
 import type { MapViewState } from "./map-state";
 
@@ -33,6 +37,8 @@ export interface MapViewProps {
   /** 視点移動の要求 (検索確定時)。null なら移動しない。 */
   readonly focus?: MapFocusRequest | null;
 }
+
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
 const SELECTED_POINT_SOURCE = "selected-point";
 const SELECTED_POINT_LAYER = "selected-point-circle";
