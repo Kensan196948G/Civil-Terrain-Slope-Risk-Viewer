@@ -17,10 +17,10 @@ Linux上の全Workspaceで、以下を共通基盤として利用する。
 
 ### 2.1 MCP 2本構成
 
-| MCP名 | 実体 | 用途 |
-|---|---|---|
-| `cloudflare` | Cloudflare API MCP（Code Mode。`https://mcp.cloudflare.com/mcp`） | Cloudflare APIの実操作（一覧・取得・設定変更・デプロイ） |
-| `cloudflare-docs` | Cloudflare Documentation MCP（`https://docs.mcp.cloudflare.com/mcp`） | 最新仕様・API仕様・設定方法の調査 |
+| MCP名             | 実体                                                                  | 用途                                                     |
+| ----------------- | --------------------------------------------------------------------- | -------------------------------------------------------- |
+| `cloudflare`      | Cloudflare API MCP（Code Mode。`https://mcp.cloudflare.com/mcp`）     | Cloudflare APIの実操作（一覧・取得・設定変更・デプロイ） |
+| `cloudflare-docs` | Cloudflare Documentation MCP（`https://docs.mcp.cloudflare.com/mcp`） | 最新仕様・API仕様・設定方法の調査                        |
 
 接続はCodex / Claude Codeの既存設定（プラグイン / MCP設定）をそのまま使う。本リポジトリでは再設定しない。
 認証はOAuth、または `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` を環境変数から利用する。
@@ -114,11 +114,11 @@ flowchart TD
 
 ### 4.2 ロールと責務
 
-| コンポーネント | 責務 | 禁止事項 |
-|---|---|---|
-| Orchestrator | コード変更・Test・Reviewを完了させる | GitHubへのpush / PR / mergeを直接行わない |
-| GitHub Controller | branch作成、add / commit / push、PR作成、CI監視、branch update、auto-merge登録、merge後branch削除確認 | Required Checks未PASS・conflict解消前のmerge |
-| GitHub（Rulesets / CI） | Required Checksの強制、merge条件の最終判定 | — |
+| コンポーネント          | 責務                                                                                                  | 禁止事項                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Orchestrator            | コード変更・Test・Reviewを完了させる                                                                  | GitHubへのpush / PR / mergeを直接行わない    |
+| GitHub Controller       | branch作成、add / commit / push、PR作成、CI監視、branch update、auto-merge登録、merge後branch削除確認 | Required Checks未PASS・conflict解消前のmerge |
+| GitHub（Rulesets / CI） | Required Checksの強制、merge条件の最終判定                                                            | —                                            |
 
 ### 4.3 GitHub Controller 操作契約
 
@@ -177,15 +177,15 @@ Workspaceの記述はGitHub運用を左右しない。
 
 ## 6. 現状と未整備事項（2026-08-15 実測）
 
-| 項目 | 状態 | 備考 |
-|---|---|---|
-| Cloudflare MCP（Codex / Claude Code） | 設定済み | `cloudflare` / `cloudflare-docs` の2本構成へ整理 |
-| Neon MCP（Codex / Claude Code） | 設定済み | `NEON_API_KEY` はホスト環境変数 |
-| GitHub Ruleset | `main-protection` 設定済み | Required Checks / PR必須 / force push・delete禁止 |
-| branch protection | Rulesetで代替 | branch protection単体は未使用 |
-| `allow_auto_merge` | true | 設定済み |
-| `delete_branch_on_merge` | true | 設定済み |
-| 書込可能なGitHub Controller | 実装済み | `bin/github-controller.sh`（`./start.sh github`） |
+| 項目                                  | 状態                       | 備考                                              |
+| ------------------------------------- | -------------------------- | ------------------------------------------------- |
+| Cloudflare MCP（Codex / Claude Code） | 設定済み                   | `cloudflare` / `cloudflare-docs` の2本構成へ整理  |
+| Neon MCP（Codex / Claude Code）       | 設定済み                   | `NEON_API_KEY` はホスト環境変数                   |
+| GitHub Ruleset                        | `main-protection` 設定済み | Required Checks / PR必須 / force push・delete禁止 |
+| branch protection                     | Rulesetで代替              | branch protection単体は未使用                     |
+| `allow_auto_merge`                    | true                       | 設定済み                                          |
+| `delete_branch_on_merge`              | true                       | 設定済み                                          |
+| 書込可能なGitHub Controller           | 実装済み                   | `bin/github-controller.sh`（`./start.sh github`） |
 
 設定適用は `./start.sh github setup`、前提確認は `./start.sh github preflight` で行う。
 auto-mergeは本仕様の条件（Required Checks PASS / conflict解消 / 中央設定整備）を満たすPRにのみ有効である。

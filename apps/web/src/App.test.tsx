@@ -76,12 +76,12 @@ function okResult(elevationM: number): ElevationResult {
   };
 }
 
+// maplibre-gl v6 は ESM-only (default export なし) のため名前付き export をモックする。
 vi.mock("maplibre-gl", () => ({
-  default: {
-    Map: mocks.FakeMap,
-    AttributionControl: mocks.AttributionControl,
-    NavigationControl: mocks.NavigationControl,
-  },
+  Map: mocks.FakeMap,
+  AttributionControl: mocks.AttributionControl,
+  NavigationControl: mocks.NavigationControl,
+  setWorkerUrl: vi.fn(),
 }));
 
 /** App を描画し、lazy import された MapView のマウント (FakeMap生成) を待つ。 */
